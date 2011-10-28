@@ -20,71 +20,71 @@
 : '.' [ char . ] literal ;
 
 : if immediate
-  ' 0branch ,
-  here @ 
-  0 ,
+    ' 0branch ,
+    here @ 
+    0 ,
 ;
 
 : then immediate
-  dup
-  here @ swap -
-  swap !
+    dup
+    here @ swap -
+    swap !
 ;
 
 : else immediate
-  ' branch ,
-  here @
-  0 ,
-  swap
-  dup
-  here @ swap -
-  swap !
+    ' branch ,
+    here @
+    0 ,
+    swap
+    dup
+    here @ swap -
+    swap !
 ;
 
 : begin immediate
-  here @
+    here @
 ;
 
 : until immediate
-  ' 0branch ,
-  here @ -
-  ,
+    ' 0branch ,
+    here @ -
+    ,
 ;
 
 : again immediate
-  ' branch ,
-  here @ -
-  ,
+    ' branch ,
+    here @ -
+    ,
 ;
 
 : while immediate
-  ' 0branch ,
-  here @
-  0 ,
+    ' 0branch ,
+    here @
+    0 ,
 ;
 
 : repeat immediate
-  ' branch ,
-  swap
-  here @ - ,
-  dup
-  here @ swap -
-  swap !
+    ' branch ,
+    swap
+    here @ - ,
+    dup
+    here @ swap -
+    swap !
 ;
 
 : unless immediate
-  ' 0= ,
-  [compile] if
+    ' 0= ,
+    [compile] if
 ;
 
 : \ immediate
-  begin	key '\n' <> while repeat ;
+    begin	key '\n' <> while repeat ;
 
 \ yksiriviset kommentit toimii nyt
 
 : ( immediate      \ moniriviset kommentit
-  1
-  begin
+    1
+    begin
 	key
 	dup 
 	'(' = if
@@ -92,8 +92,8 @@
 	    1+
 	else
 	    ')' = if
-	    	     1-
-		  then
+		1-
+	    then
 	then
     dup 0= until
     drop
@@ -104,55 +104,55 @@
 : pick 1+ cellsize * dsp@ + @ ;
 
 : spaces ( n -- )
-  begin
+    begin
 	dup 0>
-  while
-	space
-	1-
-  repeat
-  drop
+    while
+	    space
+	    1-
+    repeat
+    drop
 ;
 
 : depth
-  s0 @ dsp@ -
-  cell-
+    s0 @ dsp@ -
+    cell-
 ;
 
 : decimal 10 base ! ;
 : hex 16 base ! ;
 
 : within
-  -rot over
-  <= if
-    > if true else false then
-  else
-    2drop false then
+    -rot over
+    <= if
+	> if true else false then
+    else
+	2drop false then
 ;
 
 : aligned
-  cellsize 1- + cellsize 1- invert and ;
+    cellsize 1- + cellsize 1- invert and ;
 
 : align here @ aligned here ! ;
 : constalign consthere @ aligned consthere ! ;
 
 : s" immediate
-  state @ if            ( if compiling, emit a lit instruction with the starting pointer )
+    state @ if            ( if compiling, emit a lit instruction with the starting pointer )
 	consthere @          ( save string starting pos )
 	begin
-		key     ( startpos key )
-		dup '"' <>  ( startpos key notadoublequote )
+	    key     ( startpos key )
+	    dup '"' <>  ( startpos key notadoublequote )
 	while
 		constc,
 	repeat
 	drop
- 	' lit ,
- 	,              ( emit starting pos )
+	' lit ,
+	,              ( emit starting pos )
 	constalign
     else
-        consthere @
+	consthere @
 	begin
-		key
-		dup '"' <>
+	    key
+	    dup '"' <>
 	while
 		over c!
 		1+
@@ -164,79 +164,79 @@
 ;
 
 : ." immediate
-  state @ if
-  	[compile] s"
+    state @ if
+	[compile] s"
 	' tell ,
-  then
+    then
 ;
 
 \ menikˆ kommentista rikki
 
 : constant
-  word
-  create
-  ' lit ,
-  ,
-  ' exit ,
+    word
+    create
+    ' lit ,
+    ,
+    ' exit ,
 ;
 
 : allot
-  here @ swap here +!
+    here @ swap here +!
 ;
 
 : cells cellsize * ;
 
 : variable
-  1 cells allot
-  word create
-  lit lit ,
-  ,
-  lit exit ,
+    1 cells allot
+    word create
+    lit lit ,
+    ,
+    lit exit ,
 ;
 
 : value
-  word create
-  lit lit ,
-  ,
-  lit exit ,
+    word create
+    lit lit ,
+    ,
+    lit exit ,
 ;
 
 : to immediate
-  word find
-  >cfa
-  cell+
-  state @ if
-  	lit lit ,
+    word find
+    >cfa
+    cell+
+    state @ if
+	lit lit ,
 	,
 	lit ! ,
-  else
+    else
 	!
-  then
+    then
 ;
 
 : case immediate 0 ;
 : of immediate
-  ' over ,
-  ' = ,
-  [compile] if
-  ' drop ,
+    ' over ,
+    ' = ,
+    [compile] if
+    ' drop ,
 ;
 : endof immediate
-  [compile] else
+    [compile] else
 ;
 : endcase immediate
-  ' drop ,
-  begin ?dup while [compile] then repeat
+    ' drop ,
+    begin ?dup while [compile] then repeat
 ;
 
 : :noname
-  0 create
-  here @
-  ] 
+    0 create
+    here @
+    ] 
 ;
 
 : ['] immediate
-  lit lit ,
+    lit lit ,
 ;
 
 ( nyt voidaan k‰ytt‰‰ t‰t‰ ( nestattua ) notaatiota! )
@@ -251,14 +251,14 @@ foo . cr
 foo . cr
 
 : testi
-  30 to foo
-  foo
-  case
-    20 of ." joops" endof
-    30 of ." heips" endof
-    40 of ." lkjfds" endof
-    ." oletuskeissi"
-  endcase
+    30 to foo
+    foo
+    case
+	20 of ." joops" endof
+	30 of ." heips" endof
+	40 of ." lkjfds" endof
+	." oletuskeissi"
+    endcase
 ;
 
 testi
@@ -269,8 +269,8 @@ depth . cr
 : tulosta ." heippa maailma!" cr ;
 
 : koe
-  ' tulosta
-  dup execute execute
+    ' tulosta
+    dup execute execute
 ;
 
 \ ' unnamed disasm

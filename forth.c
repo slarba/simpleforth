@@ -1,5 +1,5 @@
 /* --------------------------------------------------
- * Forth-like language interpreter
+ * Portable Forth-like language interpreter
  * (c) 2011 Marko Lauronen, Sysart Oy
  * --------------------------------------------------
  */
@@ -13,7 +13,7 @@
 /* ---------- limits ---------- */
 #define MAX_WORD_NAME_LEN 32
 
-/* ---------- flags ---------- */
+/* ---------- dictionary entry flags ---------- */
 #define FLAG_HIDDEN      (1<<0)
 #define FLAG_IMMED       (1<<1)
 #define FLAG_BUILTIN     (1<<2)
@@ -35,9 +35,9 @@ typedef struct dict_hdr_t {
   char                 name[MAX_WORD_NAME_LEN];
 } dict_hdr_t;
 
-/* free memory pointer and latest defined word */
-static void       *const_here;
-static void       *here;
+/* free memory pointers and latest defined word */
+static void       *const_here;        /* constant pool  */
+static void       *here;              /* working memory */
 static dict_hdr_t *latest = NULL;
 
 /* utility functions */
@@ -67,7 +67,10 @@ static void ccomma(char value) {
 }
 
 static dict_hdr_t *create_word(const char *name, cell flags) {
-  if(!name) name="\0";
+  if(!name) {
+    name="\0";  /* for creating unnamed words */
+  }
+
   dict_hdr_t *new = (dict_hdr_t*)here;
   here += sizeof(dict_hdr_t);
   strncpy(new->name, name, MAX_WORD_NAME_LEN);
@@ -77,26 +80,55 @@ static dict_hdr_t *create_word(const char *name, cell flags) {
   return new;
 }
 
-static char *read_word(char *buf, int maxlen, FILE *fp) {
-  int c;
-  char *orig = buf;
+typedef struct reader_state_t {
+  FILE *stream;
+  char *linebuf;
+  cell linebuf_size;
+  char *next_char;
+} reader_state_t;
 
-  // skip whitespaces
-  do { c = fgetc(fp); } while(isspace(c));
-
-  if(c==EOF) return NULL;
-
-  do {
-    *buf++ = c; 
-    c = fgetc(fp);
-  } while(!isspace(c) && c!=EOF);
-
-  *buf++ = '\0';
-  return orig;
+static void init_reader_state(reader_state_t *state, char *linebuf, cell linebuf_size, FILE *fp) {
+  state->stream = fp;
+  state->linebuf = linebuf;
+  state->linebuf[0] = '\0';
+  state->linebuf_size = linebuf_size;
+  state->next_char = linebuf;
 }
 
-static int read_key(FILE *fp) {
-  return fgetc(fp);
+static int read_key(reader_state_t *state) {
+  if(*state->next_char=='\0') {
+    if(!fgets(state->linebuf, state->linebuf_size, state->stream))
+      return 0;
+    state->next_char = state->linebuf;
+  }
+  return *state->next_char++;
+}
+
+static char *read_word(reader_state_t *state, char *tobuf) {
+  char *buf = tobuf;
+
+  // skip whitespaces first
+ skipws:
+  while(isspace(*state->next_char)) {
+    state->next_char++;
+  }
+
+  // buffer exhausted? fill and reskip whitespaces
+  if(*state->next_char == '\0') {
+    if(!fgets(state->linebuf, state->linebuf_size, state->stream))
+      return NULL;  // file exhausted
+    state->next_char = state->linebuf;
+    goto skipws;
+  }
+
+  // copy until next whitespace
+  while(*state->next_char!='\0' && !isspace(*state->next_char)) {
+    *buf++ = *state->next_char++;
+  }
+  state->next_char++;
+  *buf = '\0';
+
+  return tobuf;
 }
 
 static void emit_char(int c, FILE *fp) {
@@ -117,6 +149,10 @@ static void interpret(void **ip, cell *ds, void ***rs)
   cell *s0 = ds;
   char wordbuf[MAX_WORD_NAME_LEN];
 
+  char lbuf[1024];
+  reader_state_t inputstate;
+  init_reader_state(&inputstate, lbuf, 1024, stdin);
+  
 #define PUSH(x)     *--ds = (cell)(x)
 #define POP()       (*ds++)
 #define INTARG()    ((cell)(*ip++))
@@ -274,7 +310,7 @@ static void interpret(void **ip, cell *ds, void ***rs)
     NEXT();
   }
  l_COMPILE: {
-    char *word = read_word(wordbuf, MAX_WORD_NAME_LEN, stdin);
+    char *word = read_word(&inputstate, wordbuf); // , MAX_WORD_NAME_LEN, stdin);
     dict_hdr_t *hdr = find_word(word);
     if(hdr->flags & FLAG_BUILTIN) {
       comma((cell)(*(cfa(hdr))));
@@ -290,7 +326,7 @@ static void interpret(void **ip, cell *ds, void ***rs)
   }
  l_TICK: {
     if(state==STATE_IMMEDIATE) {
-      char *word = read_word(wordbuf, MAX_WORD_NAME_LEN, stdin);
+      char *word = read_word(&inputstate, wordbuf); // , MAX_WORD_NAME_LEN, stdin);
       dict_hdr_t *de = find_word(wordbuf);
       cell token;
       if(de->flags & FLAG_BUILTIN) {
@@ -550,11 +586,11 @@ static void interpret(void **ip, cell *ds, void ***rs)
     NEXT();
   }
  l_WORD: {
-    PUSH(read_word(wordbuf, MAX_WORD_NAME_LEN, stdin));
+    PUSH(read_word(&inputstate, wordbuf));  // , MAX_WORD_NAME_LEN, stdin
     NEXT();
   }
  l_KEY: {
-    PUSH(read_key(stdin));
+    PUSH(read_key(&inputstate));
     NEXT();
   }
  l_EMIT: {
@@ -657,8 +693,7 @@ static void interpret(void **ip, cell *ds, void ***rs)
     NEXT();
   }
  l_DOT: {
-    char numbuf[64];
-    fprintf(stdout, ltoa(POP(), numbuf, base));
+    fprintf(stdout, "%lx\n", POP());
     NEXT();
   }
  l_TELL:
@@ -681,7 +716,7 @@ static void interpret(void **ip, cell *ds, void ***rs)
     void *word_immediatebuf[3]    = { &&l_CALL, NULL, &&l_INTERPRET };
 
     /* read a word from input skipping whitespaces, if EOF then return */
-    char *word = read_word(linebuf, MAX_WORD_NAME_LEN, stdin);
+    char *word = read_word(&inputstate,linebuf); // , MAX_WORD_NAME_LEN, stdin);
     if(!word) return;
 
     /* try to find the word from dictionary */
@@ -749,6 +784,8 @@ static void **returnstack[512];
 int main() {
   here = testbuf;
   const_here = constbuf;
+
+  setvbuf(stdin, NULL, _IONBF, 0);
 
   interpret(NULL, NULL, NULL);
   void **initprog = cfa(find_word("interpret"));
