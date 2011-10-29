@@ -14,10 +14,11 @@
 #define MAX_WORD_NAME_LEN 32
 
 /* ---------- dictionary entry flags ---------- */
-#define FLAG_HIDDEN      (1<<0)
-#define FLAG_IMMED       (1<<1)
-#define FLAG_BUILTIN     (1<<2)
-#define FLAG_HASARG      (1<<3)
+#define BIT(x) (1<<(x))
+#define FLAG_HIDDEN      BIT(0)
+#define FLAG_IMMED       BIT(1)
+#define FLAG_BUILTIN     BIT(2)
+#define FLAG_HASARG      BIT(3)
 
 /* ---------- compiler state ---------- */
 #define STATE_IMMEDIATE 0
@@ -95,11 +96,14 @@ static void init_reader_state(reader_state_t *state, char *linebuf, cell linebuf
   state->next_char = linebuf;
 }
 
+static char *read_next_line(reader_state_t *state) {
+  state->next_char = fgets(state->linebuf, state->linebuf_size, state->stream);
+  return state->next_char;
+}
+
 static int read_key(reader_state_t *state) {
   if(*state->next_char=='\0') {
-    if(!fgets(state->linebuf, state->linebuf_size, state->stream))
-      return 0;
-    state->next_char = state->linebuf;
+    if(!read_next_line(state)) return -1;
   }
   return *state->next_char++;
 }
@@ -109,15 +113,11 @@ static char *read_word(reader_state_t *state, char *tobuf) {
 
   // skip whitespaces first
  skipws:
-  while(isspace(*state->next_char)) {
-    state->next_char++;
-  }
+  while(isspace(*state->next_char)) state->next_char++;
 
   // buffer exhausted? fill and reskip whitespaces
   if(*state->next_char == '\0') {
-    if(!fgets(state->linebuf, state->linebuf_size, state->stream))
-      return NULL;  // file exhausted
-    state->next_char = state->linebuf;
+    if(!read_next_line(state)) return NULL;
     goto skipws;
   }
 
@@ -141,7 +141,15 @@ typedef struct builtin_word_t {
   cell flags;
 } builtin_word_t;
 
-static void interpret(void **ip, cell *ds, void ***rs)
+static void assemble_word(const char *name, cell flags, void **code, cell codesize) {
+  int i;
+  create_word(name, flags);
+  for(i=0; i<codesize/sizeof(void*); i++) {
+    comma((cell)code[i]);
+  }
+}
+
+static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
 {
   register long tmp;
   cell state = STATE_IMMEDIATE;
@@ -151,7 +159,7 @@ static void interpret(void **ip, cell *ds, void ***rs)
 
   char lbuf[1024];
   reader_state_t inputstate;
-  init_reader_state(&inputstate, lbuf, 1024, stdin);
+  init_reader_state(&inputstate, lbuf, 1024, inp);
   
 #define PUSH(x)     *--ds = (cell)(x)
 #define POP()       (*ds++)
@@ -230,7 +238,6 @@ static void interpret(void **ip, cell *ds, void ***rs)
     { "@", &&l_FETCH, 0 },
     { "c@", &&l_CFETCH, 0 },
     { "!", &&l_STORE, 0 },
-    { "[compile]", &&l_COMPILE, FLAG_IMMED },
     { "c!", &&l_CSTORE, 0 },
     { "interpret", &&l_INTERPRET, 0 },
     { ".", &&l_DOT, 0 },
@@ -259,14 +266,19 @@ static void interpret(void **ip, cell *ds, void ***rs)
       ++b;
     }
 
-    create_word(":", 0);
-    void *colondef[] = { &&l_WORD, &&l_CREATE, &&l_RBRAC, &&l_RETURN, 0 };
-    int i=0;
-    while(colondef[i]) { comma((cell)colondef[i++]); }
-    create_word(";", FLAG_IMMED);
-    void *semicolondef[] = { &&l_LIT, &&l_RETURN, &&l_COMMA, &&l_LBRAC, &&l_RETURN, 0 };
-    i = 0;
-    while(semicolondef[i]) { comma((cell)semicolondef[i++]); }
+    void *colondef[] = { &&l_WORD, &&l_CREATE, 
+			 &&l_LATEST, &&l_FETCH, &&l_HIDDEN, 
+			 &&l_RBRAC, 
+			 &&l_RETURN };
+    void *semicolondef[] = { &&l_LIT, &&l_RETURN, &&l_COMMA, 
+			     &&l_LATEST, &&l_FETCH, &&l_HIDDEN, 
+			     &&l_LBRAC, 
+			     &&l_RETURN };
+    void *flagdef[] = { &&l_LIT, (void*)FLAG_BUILTIN, 
+			&&l_RETURN };
+    assemble_word(":", 0, colondef, sizeof(colondef));
+    assemble_word(";", FLAG_IMMED, semicolondef, sizeof(semicolondef));
+    assemble_word("f_builtin", 0, flagdef, sizeof(flagdef));
     return;
   }
 
@@ -307,17 +319,6 @@ static void interpret(void **ip, cell *ds, void ***rs)
  l_HIDDEN: {
     dict_hdr_t *hdr = (dict_hdr_t*)POP();
     hdr->flags ^= FLAG_HIDDEN;
-    NEXT();
-  }
- l_COMPILE: {
-    char *word = read_word(&inputstate, wordbuf); // , MAX_WORD_NAME_LEN, stdin);
-    dict_hdr_t *hdr = find_word(word);
-    if(hdr->flags & FLAG_BUILTIN) {
-      comma((cell)(*(cfa(hdr))));
-    } else {
-      comma((cell)&&l_CALL);
-      comma((cell)cfa(hdr));
-    }
     NEXT();
   }
  l_CELLSIZE: {
@@ -594,7 +595,7 @@ static void interpret(void **ip, cell *ds, void ***rs)
     NEXT();
   }
  l_EMIT: {
-    emit_char(POP(), stdout);
+    emit_char(POP(), outp);
     NEXT();
   }
  l_CELLPLUS: {
@@ -693,7 +694,7 @@ static void interpret(void **ip, cell *ds, void ***rs)
     NEXT();
   }
  l_DOT: {
-    fprintf(stdout, "%lx\n", POP());
+    fprintf(outp, "%lx\n", POP());
     NEXT();
   }
  l_TELL:
@@ -787,8 +788,8 @@ int main() {
 
   setvbuf(stdin, NULL, _IONBF, 0);
 
-  interpret(NULL, NULL, NULL);
+  interpret(NULL, NULL, NULL, NULL, NULL);
   void **initprog = cfa(find_word("interpret"));
-  interpret(initprog, datastack+1024, returnstack+512);
+  interpret(initprog, datastack+1024, returnstack+512, stdin, stdout);
   return 0;
 }

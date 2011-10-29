@@ -41,6 +41,22 @@
     swap !
 ;
 
+: [compile] immediate
+    word find
+    dup @ f_builtin and
+    if
+	>cfa @ ,
+    else
+	lit call , >cfa ,
+    then
+;
+
+: recurse immediate
+    latest @
+    lit call ,
+    >cfa ,
+;
+
 : begin immediate
     here @
 ;
@@ -78,7 +94,12 @@
 ;
 
 : \ immediate
-    begin	key '\n' <> while repeat ;
+    begin
+	key
+	'\n' <>
+    while
+    repeat
+;
 
 \ yksiriviset kommentit toimii nyt
 
@@ -86,16 +107,17 @@
     1
     begin
 	key
-	dup 
-	'(' = if
-	    drop
-	    1+
+	dup '(' =
+	if
+	    drop 1+
 	else
-	    ')' = if
+	    ')' =
+	    if
 		1-
 	    then
 	then
-    dup 0= until
+    dup 0=
+    until
     drop
 ;
 
@@ -167,14 +189,19 @@
     state @ if
 	[compile] s"
 	' tell ,
+    else
+	begin
+	    key
+	    dup '"' = if
+		drop exit
+	    then
+	    emit
+	again
     then
 ;
 
-\ menikö kommentista rikki
-
 : constant
-    word
-    create
+    word create
     ' lit ,
     ,
     ' exit ,
@@ -189,16 +216,16 @@
 : variable
     1 cells allot
     word create
-    lit lit ,
+    ' lit ,
     ,
-    lit exit ,
+    ' exit ,
 ;
 
 : value
     word create
-    lit lit ,
+    ' lit ,
     ,
-    lit exit ,
+    ' exit ,
 ;
 
 : to immediate
@@ -206,9 +233,9 @@
     >cfa
     cell+
     state @ if
-	lit lit ,
+	' lit ,
 	,
-	lit ! ,
+	' ! ,
     else
 	!
     then
@@ -236,7 +263,7 @@
 ;
 
 : ['] immediate
-    lit lit ,
+    ' lit ,
 ;
 
 ( nyt voidaan käyttää tätä ( nestattua ) notaatiota! )
