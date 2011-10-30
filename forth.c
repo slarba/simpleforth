@@ -10,6 +10,8 @@
 #include <string.h>
 #include <limits.h>
 
+#define FORTH_VERSION 1
+
 /* ---------- limits ---------- */
 #define MAX_WORD_NAME_LEN 32
 
@@ -29,7 +31,7 @@ typedef long cell;
 
 /* preprocessor trick to test sizeof(long)==sizeof(void*)? */
 
-/* dictionary definition header */
+/* dictionary definition header. NEVER change the order of these fields, it's crucial! */
 typedef struct dict_hdr_t {
   cell                 flags;
   struct dict_hdr_t   *next;
@@ -149,6 +151,22 @@ static void assemble_word(const char *name, cell flags, void **code, cell codesi
   }
 }
 
+static void *get_builtin(const char *name) {
+  dict_hdr_t *hdr = find_word(name);
+  return *(cfa(hdr));
+}
+
+static void create_constant(const char *name, cell value) {
+  void *flagdef[] = { get_builtin("lit"), 0, get_builtin("exit") };
+  flagdef[1] = (void*)value;
+  assemble_word(name, 0, flagdef, sizeof(flagdef));
+}
+
+static void create_builtin(builtin_word_t *b) {
+  create_word(b->name, b->flags | FLAG_BUILTIN);
+  comma((cell)b->code);
+}
+
 static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
 {
   register long tmp;
@@ -194,7 +212,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     { "here", &&l_HERE, 0 },
     { "latest", &&l_LATEST, 0 },
     { "base", &&l_BASE, 0 },
-    { "s0", &&l_S0, 0 },
     { "find", &&l_FIND, 0 },
     { "create", &&l_CREATE, 0 },
     { "word", &&l_WORD, 0 },
@@ -246,7 +263,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     { "'", &&l_TICK, FLAG_HASARG|FLAG_IMMED },
     { "immediate", &&l_IMMEDIATE, FLAG_IMMED },
     { "disasm", &&l_DISASM, 0 },
-    { "cellsize", &&l_CELLSIZE, 0 },
     { "consthere", &&l_CONSTPOOL, 0 },
     { "const,", &&l_CONSTCOMMA, 0 },
     { "constc,", &&l_CONSTCCOMMA, 0 },
@@ -261,9 +277,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
   if(!ip) {
     builtin_word_t *b = builtins;
     while(b->name) {
-      create_word(b->name, b->flags | FLAG_BUILTIN);
-      comma((cell)b->code);
-      ++b;
+      create_builtin(b++);
     }
 
     void *colondef[] = { &&l_WORD, &&l_CREATE, 
@@ -274,11 +288,17 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
 			     &&l_LATEST, &&l_FETCH, &&l_HIDDEN, 
 			     &&l_LBRAC, 
 			     &&l_RETURN };
-    void *flagdef[] = { &&l_LIT, (void*)FLAG_BUILTIN, 
-			&&l_RETURN };
+
     assemble_word(":", 0, colondef, sizeof(colondef));
     assemble_word(";", FLAG_IMMED, semicolondef, sizeof(semicolondef));
-    assemble_word("f_builtin", 0, flagdef, sizeof(flagdef));
+
+    /* some constants */
+    create_constant("version", FORTH_VERSION);
+    create_constant("f_builtin", FLAG_BUILTIN);
+    create_constant("f_immediate", FLAG_IMMED);
+    create_constant("f_hidden", FLAG_HIDDEN);
+    create_constant("s0", (cell) &s0);
+    create_constant("cellsize", (cell)sizeof(cell));
     return;
   }
 
@@ -319,10 +339,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
  l_HIDDEN: {
     dict_hdr_t *hdr = (dict_hdr_t*)POP();
     hdr->flags ^= FLAG_HIDDEN;
-    NEXT();
-  }
- l_CELLSIZE: {
-    PUSH(sizeof(cell));
     NEXT();
   }
  l_TICK: {
@@ -521,11 +537,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     latest->flags ^= FLAG_IMMED;
     NEXT();
   }
- l_S0: {
-    PUSH(&s0);
-    NEXT();
-  }
-
  l_LT: {
     tmp = POP();
     AT(0) = AT(0) < tmp;
@@ -694,7 +705,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     NEXT();
   }
  l_DOT: {
-    fprintf(outp, "%lx\n", POP());
+    fprintf(outp, "%ld\n", POP());
     NEXT();
   }
  l_TELL:
