@@ -64,11 +64,6 @@ static void comma(cell value) {
   here += sizeof(cell);
 }
 
-static void ccomma(char value) {
-  *(char*)here = value;
-  here += sizeof(char);
-}
-
 static dict_hdr_t *create_word(const char *name, cell flags) {
   if(!name) {
     name="\0";  /* for creating unnamed words */
@@ -169,7 +164,7 @@ static void create_builtin(builtin_word_t *b) {
 
 static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
 {
-  register long tmp;
+  long tmp;
   cell state = STATE_IMMEDIATE;
   cell base = 10;
   cell *s0 = ds;
@@ -202,6 +197,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     { "swap", &&l_SWAP, 0 },
     { "drop", &&l_DROP, 0 },
     { "2drop", &&l_2DROP, 0 },
+    { "/mod", &&l_DIVMOD, 0 },
     { ">r", &&l_TOR },
     { "r>", &&l_FROMR },
     { "rsp@", &&l_RSPGET },
@@ -209,24 +205,19 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     { "over", &&l_OVER, 0 },
     { "rot", &&l_ROT, 0 },
     { "-rot", &&l_MROT, 0 },
-    { "here", &&l_HERE, 0 },
-    { "latest", &&l_LATEST, 0 },
-    { "base", &&l_BASE, 0 },
     { "find", &&l_FIND, 0 },
     { "create", &&l_CREATE, 0 },
     { "word", &&l_WORD, 0 },
     { "key", &&l_KEY, 0 },
     { "emit", &&l_EMIT, 0 },
     { "tell", &&l_TELL, 0 },
-    { "state", &&l_STATE, 0 },
+    { "latest", &&l_LATEST, 0 },
     { "[", &&l_LBRAC, FLAG_IMMED },
     { "]", &&l_RBRAC, 0 },
     { "1+", &&l_ADD1, 0 },
     { "1-", &&l_SUB1, 0 },
     { "+!", &&l_MEMADD, 0 },
     { "-!", &&l_MEMSUB, 0 },
-    { "cell+", &&l_CELLPLUS, 0 },
-    { "cell-", &&l_CELLMINUS, 0 },
     { "+", &&l_ADD, 0 },
     { "-", &&l_SUB, 0 },
     { "*", &&l_MUL, 0 },
@@ -251,21 +242,15 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     { ">cfa", &&l_TOCFA, 0 },
     { ",", &&l_COMMA, 0 },
     { "dsp@", &&l_DSPFETCH, 0 },
-    { "c,", &&l_CCOMMA, 0 },
     { "@", &&l_FETCH, 0 },
     { "c@", &&l_CFETCH, 0 },
     { "!", &&l_STORE, 0 },
     { "c!", &&l_CSTORE, 0 },
     { "interpret", &&l_INTERPRET, 0 },
-    { ".", &&l_DOT, 0 },
     { "hidden", &&l_HIDDEN, 0 },
     { "execute", &&l_EXECUTE, 0 },
     { "'", &&l_TICK, FLAG_HASARG|FLAG_IMMED },
     { "immediate", &&l_IMMEDIATE, FLAG_IMMED },
-    { "disasm", &&l_DISASM, 0 },
-    { "consthere", &&l_CONSTPOOL, 0 },
-    { "const,", &&l_CONSTCOMMA, 0 },
-    { "constc,", &&l_CONSTCCOMMA, 0 },
     { "malloc", &&l_MALLOC, 0 },
     { "mfree", &&l_MFREE, 0 },
     { "pushxt", &&l_PUSHXT, 0 },
@@ -276,21 +261,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
   /* special case: if ip is NULL, fill the builtins into dictionary */
   if(!ip) {
     builtin_word_t *b = builtins;
-    while(b->name) {
-      create_builtin(b++);
-    }
-
-    void *colondef[] = { &&l_WORD, &&l_CREATE, 
-			 &&l_LATEST, &&l_FETCH, &&l_HIDDEN, 
-			 &&l_RBRAC, 
-			 &&l_RETURN };
-    void *semicolondef[] = { &&l_LIT, &&l_RETURN, &&l_COMMA, 
-			     &&l_LATEST, &&l_FETCH, &&l_HIDDEN, 
-			     &&l_LBRAC, 
-			     &&l_RETURN };
-
-    assemble_word(":", 0, colondef, sizeof(colondef));
-    assemble_word(";", FLAG_IMMED, semicolondef, sizeof(semicolondef));
+    while(b->name) create_builtin(b++);
 
     /* some constants */
     create_constant("version", FORTH_VERSION);
@@ -298,31 +269,19 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     create_constant("f_immediate", FLAG_IMMED);
     create_constant("f_hidden", FLAG_HIDDEN);
     create_constant("s0", (cell) &s0);
+    create_constant("state", (cell) &state);
     create_constant("cellsize", (cell)sizeof(cell));
+    create_constant("base", (cell) &base);
+    create_constant("here", (cell) &here);
+    create_constant("consthere", (cell) &const_here);
+    create_constant("hdrsize", (cell) sizeof(dict_hdr_t));
     return;
   }
 
   NEXT();
- l_DISASM: {
-    void **code = (void**)POP();
-    while(*code!=&&l_RETURN) {
-      builtin_word_t *b = builtins;
-      while(b->name) {
-	if(b->code==*code) {
-	  if(b->flags & FLAG_HASARG) {
-	    printf("0x%lx   %s %d\n", code, b->name, *(code+1));
-	    code += 2;
-	  } else {
-	    printf("0x%lx   %s\n", code, b->name);
-	    code++;
-	  }
-	  break;
-	}
-	b++;
-      }
-      if(!b->name) { puts("error disassembling"); NEXT(); }
-    }
-    printf("0x%lx   exit\n", code);
+
+ l_LATEST: {
+    PUSH(&latest);
     NEXT();
   }
  l_CALL: { 
@@ -342,18 +301,19 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     NEXT();
   }
  l_TICK: {
+    read_word(&inputstate, wordbuf); // , MAX_WORD_NAME_LEN, stdin);
+    dict_hdr_t *de = find_word(wordbuf);
+    cell token;
+    if(de->flags & FLAG_BUILTIN) {
+      token = (cell)(*(cfa(de)));
+    } else {
+      token = (cell)cfa(de);
+    }
     if(state==STATE_IMMEDIATE) {
-      char *word = read_word(&inputstate, wordbuf); // , MAX_WORD_NAME_LEN, stdin);
-      dict_hdr_t *de = find_word(wordbuf);
-      cell token;
-      if(de->flags & FLAG_BUILTIN) {
-	token = (cell)(*(cfa(de)));
-      } else {
-	token = (cell)cfa(de);
-      }
       PUSH(token);
     } else {
-      comma((cell)&&l_PUSHXT);
+      comma((cell)&&l_LIT);
+      comma(token);
     }
     NEXT();
   }
@@ -465,6 +425,13 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     ds += 2;
     NEXT();
   }
+ l_DIVMOD: {
+    cell a = POP();
+    cell b = POP();
+    PUSH( b % a );
+    PUSH( b / a );
+    NEXT();
+  }
  l_ADD: { 
     tmp = POP();
     AT(0) += tmp;
@@ -518,20 +485,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     tmp = POP();
     AT(0) ^= tmp;
     NEXT(); 
-  }
-
- l_HERE: {
-    PUSH(&here);
-    NEXT();
-  }
- l_CONSTPOOL: {
-    PUSH(&const_here);
-    NEXT();
-  }
-
- l_LATEST: {
-    PUSH(&latest);
-    NEXT();
   }
  l_IMMEDIATE: {
     latest->flags ^= FLAG_IMMED;
@@ -609,14 +562,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     emit_char(POP(), outp);
     NEXT();
   }
- l_CELLPLUS: {
-    AT(0) += sizeof(cell);
-    NEXT();
-  }
- l_CELLMINUS: {
-    AT(0) -= sizeof(cell);
-    NEXT();
-  }
  l_ADD1: {
     AT(0) += 1;
     NEXT();
@@ -637,14 +582,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     *addr -= tmp;
     NEXT();
   }
- l_STATE: {
-    PUSH(&state);
-    NEXT();
-  }
- l_BASE: {
-    PUSH(&base);
-    NEXT();
-  }
  l_LBRAC: {
     state = STATE_IMMEDIATE;
     NEXT();
@@ -657,24 +594,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     tmp = POP();
     *(cell*)here = tmp;
     here += sizeof(cell);
-    NEXT();
-  }
- l_CCOMMA: {
-    tmp = POP();
-    *(char*)here = (char)tmp;
-    here += sizeof(char);
-    NEXT();
-  }
- l_CONSTCOMMA: {
-    tmp = POP();
-    *(cell*)const_here = tmp;
-    const_here += sizeof(cell);
-    NEXT();
-  }
- l_CONSTCCOMMA: {
-    tmp = POP();
-    *(char*)const_here = (char)tmp;
-    const_here += sizeof(char);
     NEXT();
   }
  l_STORE: {
@@ -704,13 +623,9 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     PUSH((ptr+1));
     NEXT();
   }
- l_DOT: {
-    fprintf(outp, "%ld\n", POP());
-    NEXT();
-  }
  l_TELL:
   {
-    printf((char*)POP());
+    fprintf(stdout, (char*)POP());
     NEXT();
   }
  l_MALLOC: {
