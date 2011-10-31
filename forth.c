@@ -188,6 +188,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     { "call", &&l_CALL, FLAG_HASARG },
     { "die", &&l_DIE, 0 },
     { "exit", &&l_RETURN, 0 },
+    { "eow", &&l_EOW, 0 },
     { "branch", &&l_BRANCH, FLAG_HASARG },
     { "0branch", &&l_0BRANCH, FLAG_HASARG },
     { "lit", &&l_LIT, FLAG_HASARG },
@@ -293,6 +294,10 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
  l_EXECUTE: {
     PUSHRS(ip);
     ip = (void**)POP();
+    NEXT();
+  }
+ l_EOW: {
+    // end of word marker, do nothing
     NEXT();
   }
  l_HIDDEN: {

@@ -1,11 +1,11 @@
 58 consthere @ c!
 0  consthere @ 1+ c!
 consthere @ create
-' word , ' create , ' latest , ' @ , ' hidden , ' ] , ' exit ,
+' word , ' create , ' latest , ' @ , ' hidden , ' ] , ' exit , ' eow ,
 59 consthere @ c!
 0  consthere @ 1+ c!
 consthere @ create immediate
-' lit , ' exit , ' , , ' latest , ' @ , ' hidden , ' [ , ' exit ,
+' lit , ' exit , ' , , ' lit , ' eow , ' , , ' latest , ' @ , ' hidden , ' [ , ' exit , ' eow ,
 
 : '\n' 10 ;
 : bl   32 ;
@@ -34,6 +34,9 @@ consthere @ create immediate
 : '0' [ char 0 ] literal ;
 : '-' [ char - ] literal ;
 : '.' [ char . ] literal ;
+
+: hide
+    word find hidden ;
 
 : if immediate
     ' 0branch ,
@@ -359,13 +362,12 @@ consthere @ create immediate
     ' lit ,
 ;
 
-depth . cr
-
 : next-opcode ( opcodeaddr -- opcodeaddr opcode )
     dup @ swap cell+ swap ;
 
+: id. cell+ cell+ tell ;
 : print-call-target ( jumpaddr -- )
-    hdrsize - cell+ cell+ tell
+    hdrsize - id.
 ;
 
 : print-address ( addr -- )
@@ -378,8 +380,8 @@ depth . cr
 	' call  of ." call <" next-opcode print-call-target ." >" endof
 	' die     of ." die" endof
 	' exit    of ." exit" endof
-	' branch  of ." branch (" next-opcode . ." )" endof
-	' 0branch  of ." 0branch (" next-opcode . ." )" endof
+	' branch  of ." branch ( " next-opcode . ." )" endof
+	' 0branch  of ." 0branch ( " next-opcode . ." )" endof
 	' lit     of ." lit " next-opcode . endof
 	' dup  of ." dup" endof
 	' 2dup  of ." 2dup" endof
@@ -451,53 +453,36 @@ depth . cr
 : disassemble ( xt -- )
     begin
 	dup @
-	' exit <>
+	' eow <>
     while
 	    disasm-next-instr
     repeat
     drop
 ;
 
-( nyt voidaan k‰ytt‰‰ t‰t‰ ( nestattua ) notaatiota! )
+: ?hidden
+    @ f_hidden and ;
+: ?immediate
+    @ f_immediate and ;
 
-20 constant kakskyta
-50 value foo
-
-kakskyta . cr
-
-foo . cr
-40 to foo
-foo . cr
-
-: testi
-    30 to foo
-    foo
-    case
-	20 of ." joops" endof
-	30 of ." heips" endof
-	40 of ." lkjfds" endof
-	." oletuskeissi"
-    endcase
+: words
+    latest @
+    begin
+	?dup
+    while
+	    dup ?hidden not if
+		dup id.
+		space
+	    then
+	    cell+ @
+    repeat
+    cr
 ;
 
-testi
-foo . cr
-
-depth . cr
-
-: tulosta ." heippa maailma!" cr ;
-
-: koe
-    ' tulosta
-    dup execute execute
+: welcome
+    ." MLT Forth version " version . cr
+    ." Welcome!" cr
 ;
 
-' koe execute
-
-depth .
-
-." begin disassembly!" cr
-
-' testi disassemble
-
-." end disassembly!" cr
+welcome
+hide welcome
