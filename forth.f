@@ -259,6 +259,7 @@ consthere @ create immediate
 		constc,
 	repeat
 	drop
+	0 constc,  ( null-terminate! )
 	' lit ,
 	,              ( emit starting pos )
 	constalign
