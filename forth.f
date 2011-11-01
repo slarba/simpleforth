@@ -444,7 +444,6 @@ consthere @ create immediate
 	' '  of ." '" endof
 	' malloc  of ." malloc" endof
 	' mfree  of ." mfree" endof
-	' pushxt  of ." pushxt" endof
 
     endcase
     cr
@@ -459,6 +458,10 @@ consthere @ create immediate
     repeat
     drop
 ;
+
+hide disasm-next-instr
+hide next-opcode
+hide print-call-target
 
 : ?hidden
     @ f_hidden and ;
@@ -477,6 +480,140 @@ consthere @ create immediate
 	    cell+ @
     repeat
     cr
+;
+
+( oliomekanismi )
+
+: object-size ( classdef -- objsize )
+    ;
+: baseclass-def ( classdef -- baseclassdef )
+    cell+ ;
+: vtable-size ( classdef -- vtablesize )
+    2 cells + ;
+: vtable-ptr ( classdef -- vtableptr )
+    3 cells + ;
+
+: send ( ... object method -- ... )
+    over @ vtable-ptr + @ execute ;
+
+variable curr-defined-class
+variable curr-defined-class-size
+variable curr-defined-class-vtblsize
+
+: class: ( -- )
+    word create
+    ' lit ,
+    consthere @ ,
+    ' exit ,
+    ' eow ,
+    consthere @ curr-defined-class !      ( store classdef ptr )
+    consthere @ vtable-ptr consthere !    ( advance constpool ptr to beginning of vtable )
+    0 curr-defined-class-size !
+    0 curr-defined-class-vtblsize !
+;
+
+: <base ( -- )
+    word find
+    >cfa execute                ( baseclassdef )
+    dup curr-defined-class @ baseclass-def !                 \ store baseclass pointer to current definition
+    dup object-size @        curr-defined-class-size !       \ new class is at least of baseclass's size
+    dup vtable-size @        curr-defined-class-vtblsize !   \ and vtable is copied
+    ( now copy the vtable )
+    dup vtable-size @          ( baseclassdef vtablesize )
+    swap vtable-ptr swap       ( baseclassvtableptr vtablesize )
+    begin
+	dup 0>
+    while
+	    swap dup @ const, cell+ swap
+	    1-
+    repeat
+    2drop
+;
+
+: var ( fieldsize -- )
+    word create
+    ' lit ,
+    curr-defined-class-size @ cell+ ,
+    ' + ,
+    ' exit ,
+    ' eow ,
+    curr-defined-class-size +!
+;
+
+: unimplemented-method drop ;
+
+: method ( -- )
+    word create
+    ' lit ,
+    curr-defined-class-vtblsize @ cellsize * ,
+    ' exit ,
+    ' eow ,
+    ' unimplemented-method const,
+    1 curr-defined-class-vtblsize +!
+;
+
+: endclass ( -- )
+    curr-defined-class-size @ curr-defined-class @ object-size !
+    curr-defined-class-vtblsize @ curr-defined-class @ vtable-size !
+;
+
+: m: 0 create here @ ] ;
+
+: implements ( fn -- )
+    word find >cfa execute
+    curr-defined-class @ vtable-ptr + ! ;
+
+( -------------------------------------------------- )
+class: object
+    method construct
+    method destruct
+    method tostring
+
+    m: s" <object>" swap drop ; implements tostring
+endclass
+
+: new ( classdef -- object )
+    dup object-size @ cell+ malloc   ( classdef object )
+    2dup !                           ( classdef object )
+    swap drop dup construct send
+;
+
+: delete ( object -- )
+    dup destruct send
+    mfree
+;
+
+class: myclass <base object
+   1 cells var field1
+   1 cells var field2
+
+   method method1
+   method method2
+   method method3
+
+m:
+    ." construct" cr
+    20 swap field1 !
+; implements construct
+
+m:
+    ." destruct" cr drop
+; implements destruct
+
+endclass
+
+myclass new value testiotus
+
+( -------------------------------------------------- )
+    
+: strlen ( str -- len )
+    dup
+    begin
+	dup c@ 0<>
+    while
+	    1+
+    repeat
+    swap -
 ;
 
 : welcome

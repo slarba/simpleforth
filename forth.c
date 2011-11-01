@@ -254,7 +254,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     { "immediate", &&l_IMMEDIATE, FLAG_IMMED },
     { "malloc", &&l_MALLOC, 0 },
     { "mfree", &&l_MFREE, 0 },
-    { "pushxt", &&l_PUSHXT, 0 },
+    { "cmove", &&l_CMOVE, 0 },
 
     { NULL, NULL, 0 }
   };
@@ -319,15 +319,6 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     } else {
       comma((cell)&&l_LIT);
       comma(token);
-    }
-    NEXT();
-  }
- l_PUSHXT: {
-    void *xt = ARG();
-    if(xt==&&l_CALL) {
-      PUSH(ARG());
-    } else {
-      PUSH(xt);
     }
     NEXT();
   }
@@ -640,6 +631,13 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
   }
  l_MFREE: {
     free((void*)POP());
+    NEXT();
+  }
+ l_CMOVE: {
+    tmp = POP();
+    void *dst = (void*)POP();
+    void *src = (void*)POP();
+    memcpy(dst, src, tmp);
     NEXT();
   }
  l_INTERPRET: {
