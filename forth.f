@@ -444,7 +444,9 @@ consthere @ create immediate
 	' '  of ." '" endof
 	' malloc  of ." malloc" endof
 	' mfree  of ." mfree" endof
-
+	' open-file of ." open-file" endof
+	' close-file of ." close-file" endof
+	' ?eof of ." ?eof" endof
     endcase
     cr
 ;
@@ -616,14 +618,40 @@ myclass new value testiotus
     swap -
 ;
 
-(
-: include ( -- )
-word
-open-file
-current-input @ pushtoinputstack
-dup current-input !
+: for-reading ( -- mode ) s" r" ;
+: for-reading-and-writing ( -- mode ) s" r+" ;
 
-)
+variable input-stack
+16 cells allot input-stack !
+
+: push-input-stack ( fp -- )
+    input-stack @ !
+    input-stack @ cell+ input-stack !
+;
+
+: pop-input-stack ( -- fp )
+    input-stack @ cell- input-stack !
+    input-stack @ @
+;
+
+: include ( -- )
+    word
+    for-reading open-file            ( fp )
+    dup if                           ( fp )
+	<stdin> @ push-input-stack   \ save old stdin
+	<stdin> !                    \ store fp as new stdin
+	begin
+	    <stdin> @ ?eof not       \ as long as there is something to interpret
+	while
+		interpret            \ ... interpret!
+	repeat
+	<stdin> @ close-file         \ close the file
+	pop-input-stack <stdin> !    \ and restore old stdin
+    else
+	." no such file" cr
+	drop
+    then
+;
 
 : welcome
     ." MLT Forth version " version . cr

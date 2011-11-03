@@ -26,6 +26,9 @@
 #define STATE_IMMEDIATE 0
 #define STATE_COMPILE   1
 
+/* utility for calculating branch offsets in inline bytecode */
+#define OFFSET(x) (void*)((x)*sizeof(cell))
+
 /* the most important type, the cell. MUST be exactly of the pointer length! */
 typedef long cell;
 
@@ -93,9 +96,38 @@ static void init_reader_state(reader_state_t *state, char *linebuf, cell linebuf
   state->next_char = linebuf;
 }
 
+static reader_state_t *open_file(const char *filename, const char *mode) {
+  FILE *fp = fopen(filename, mode);
+  if(!fp) return NULL;
+  char *lbuf = malloc(1024);
+  if(!lbuf) goto err_exit;
+
+  reader_state_t *state = (reader_state_t*)malloc(sizeof(reader_state_t));
+  if(!state) goto err_exit;
+  init_reader_state(state, lbuf, 1024, fp);
+  return state;
+
+ err_exit:
+  free(lbuf);
+  fclose(fp);
+  return NULL;
+}
+
+static void close_file(reader_state_t *fp) {
+  fclose(fp->stream);
+  free(fp->linebuf);
+  free(fp);
+}
+
+static cell is_eof(reader_state_t *fp) {
+  return *fp->next_char=='\0' && feof(fp->stream);
+}
+
 static char *read_next_line(reader_state_t *state) {
-  state->next_char = fgets(state->linebuf, state->linebuf_size, state->stream);
-  return state->next_char;
+  char *tmp = fgets(state->linebuf, state->linebuf_size, state->stream);
+  if(!tmp) return NULL;
+  state->next_char = tmp;
+  return tmp;
 }
 
 static int read_key(reader_state_t *state) {
@@ -252,6 +284,9 @@ static void interpret(void **ip, cell *ds, void ***rs, void ***nestingstack, rea
     { "malloc", &&l_MALLOC, 0 },
     { "mfree", &&l_MFREE, 0 },
     { "cmove", &&l_CMOVE, 0 },
+    { "open-file", &&l_OPENFILE, 0 },
+    { "close-file", &&l_CLOSEFILE, 0 },
+    { "?eof", &&l_ISEOF, 0 },
 
     { NULL, NULL, 0 }
   };
@@ -273,8 +308,17 @@ static void interpret(void **ip, cell *ds, void ***rs, void ***nestingstack, rea
     create_constant("here", (cell) &here);
     create_constant("consthere", (cell) &const_here);
     create_constant("hdrsize", (cell) sizeof(dict_hdr_t));
+    create_constant("<stdin>", (cell) &inputstate);
 
-    void *quitcode[] = { &&l_INTERPRET, &&l_BRANCH, (void*)(-2*sizeof(cell)) };
+    // QUIT is the topmost interpreter loop: interpret one step, check for eof on
+    // current input source, and die if EOF
+    void *quitcode[] = { &&l_INTERPRET, 
+			 &&l_CALL, cfa(find_word("<stdin>")),
+			 &&l_FETCH,
+			 &&l_ISEOF,
+			 &&l_0BRANCH, OFFSET(-6),
+			 &&l_DIE, &&l_EOW
+    };
     assemble_word("quit", 0, quitcode, sizeof(quitcode));
     return;
   }
@@ -649,9 +693,9 @@ static void interpret(void **ip, cell *ds, void ***rs, void ***nestingstack, rea
     void *builtin_immediatebuf[2] = { NULL, &&l_INTERPRET_RETURN };
     void *word_immediatebuf[3]    = { &&l_CALL, NULL, &&l_INTERPRET_RETURN };
 
-    /* read a word from input skipping whitespaces, if EOF then return */
+    /* read a word from input skipping whitespaces, if EOF then just do nothing */
     char *word = read_word(inputstate,linebuf); // , MAX_WORD_NAME_LEN, stdin);
-    if(!word) return;
+    if(!word) NEXT();
 
     /* try to find the word from dictionary */
     dict_hdr_t *entry = find_word(word);
@@ -707,6 +751,22 @@ static void interpret(void **ip, cell *ds, void ***rs, void ***nestingstack, rea
     NEXT();
   }
 
+ l_OPENFILE: {
+    char *mode = (char*)POP();
+    char *fn = (char*)POP();
+    PUSH(open_file(fn, mode));
+    NEXT();
+  }
+ l_CLOSEFILE: {
+    reader_state_t *state = (reader_state_t*)POP();
+    close_file(state);
+    NEXT();
+  }
+ l_ISEOF: {
+    reader_state_t *state = (reader_state_t*)POP();
+    PUSH(is_eof(state));
+    NEXT();
+  }
   return;
 }
 
