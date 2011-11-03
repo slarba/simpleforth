@@ -138,17 +138,18 @@ typedef struct builtin_word_t {
   cell flags;
 } builtin_word_t;
 
+static void *get_builtin(const char *name) {
+  dict_hdr_t *hdr = find_word(name);
+  return *(cfa(hdr));
+}
+
 static void assemble_word(const char *name, cell flags, void **code, cell codesize) {
   int i;
   create_word(name, flags);
   for(i=0; i<codesize/sizeof(void*); i++) {
     comma((cell)code[i]);
   }
-}
-
-static void *get_builtin(const char *name) {
-  dict_hdr_t *hdr = find_word(name);
-  return *(cfa(hdr));
+  comma((cell)get_builtin("eow"));
 }
 
 static void create_constant(const char *name, cell value) {
@@ -162,17 +163,13 @@ static void create_builtin(builtin_word_t *b) {
   comma((cell)b->code);
 }
 
-static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
+static void interpret(void **ip, cell *ds, void ***rs, void ***nestingstack, reader_state_t *inputstate, FILE *outp)
 {
-  long tmp;
+  cell tmp;
   cell state = STATE_IMMEDIATE;
   cell base = 10;
   cell *s0 = ds;
   char wordbuf[MAX_WORD_NAME_LEN];
-
-  char lbuf[1024];
-  reader_state_t inputstate;
-  init_reader_state(&inputstate, lbuf, 1024, inp);
   
 #define PUSH(x)     *--ds = (cell)(x)
 #define POP()       (*ds++)
@@ -276,6 +273,9 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     create_constant("here", (cell) &here);
     create_constant("consthere", (cell) &const_here);
     create_constant("hdrsize", (cell) sizeof(dict_hdr_t));
+
+    void *quitcode[] = { &&l_INTERPRET, &&l_BRANCH, (void*)(-2*sizeof(cell)) };
+    assemble_word("quit", 0, quitcode, sizeof(quitcode));
     return;
   }
 
@@ -306,7 +306,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     NEXT();
   }
  l_TICK: {
-    read_word(&inputstate, wordbuf); // , MAX_WORD_NAME_LEN, stdin);
+    read_word(inputstate, wordbuf); // , MAX_WORD_NAME_LEN, stdin);
     dict_hdr_t *de = find_word(wordbuf);
     cell token;
     if(de->flags & FLAG_BUILTIN) {
@@ -547,11 +547,11 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     NEXT();
   }
  l_WORD: {
-    PUSH(read_word(&inputstate, wordbuf));  // , MAX_WORD_NAME_LEN, stdin
+    PUSH(read_word(inputstate, wordbuf));  // , MAX_WORD_NAME_LEN, stdin
     NEXT();
   }
  l_KEY: {
-    PUSH(read_key(&inputstate));
+    PUSH(read_key(inputstate));
     NEXT();
   }
  l_EMIT: {
@@ -640,13 +640,17 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
     memcpy(dst, src, tmp);
     NEXT();
   }
+ l_INTERPRET_RETURN: {
+    ip = *nestingstack++;
+    NEXT();
+  }
  l_INTERPRET: {
     char linebuf[MAX_WORD_NAME_LEN];
-    void *builtin_immediatebuf[2] = { NULL, &&l_INTERPRET };
-    void *word_immediatebuf[3]    = { &&l_CALL, NULL, &&l_INTERPRET };
+    void *builtin_immediatebuf[2] = { NULL, &&l_INTERPRET_RETURN };
+    void *word_immediatebuf[3]    = { &&l_CALL, NULL, &&l_INTERPRET_RETURN };
 
     /* read a word from input skipping whitespaces, if EOF then return */
-    char *word = read_word(&inputstate,linebuf); // , MAX_WORD_NAME_LEN, stdin);
+    char *word = read_word(inputstate,linebuf); // , MAX_WORD_NAME_LEN, stdin);
     if(!word) return;
 
     /* try to find the word from dictionary */
@@ -669,7 +673,7 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
 	}
       }
       /* and then continue interpreting */
-      goto l_INTERPRET;
+      NEXT();
     }
 
     /* was a real word and was found in dictionary. if compiling and word is not an immediate one,
@@ -685,13 +689,13 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
 	comma((cell) cfa(entry));
       }
       /* and continue interpreting */
-      goto l_INTERPRET;
     } else {
       /* we're in immediate mode OR the word was an immediate one...
        * emit the instruction into a temp buffer and execute from there, returning to
        * INTERPRET again
        */
       void **code = cfa(entry);
+      *--nestingstack = ip;
       if(entry->flags & FLAG_BUILTIN) {
 	builtin_immediatebuf[0] = *code;
 	ip = builtin_immediatebuf;
@@ -699,8 +703,8 @@ static void interpret(void **ip, cell *ds, void ***rs, FILE *inp, FILE *outp)
 	word_immediatebuf[1] = (void*)code;
 	ip = word_immediatebuf;
       }
-      NEXT();
     }
+    NEXT();
   }
 
   return;
@@ -710,15 +714,20 @@ static char constbuf[102400];
 static char testbuf[102400];
 static cell datastack[1024];
 static void **returnstack[512];
+static void **nestingstack[16];
 
 int main() {
+  char linebuf[1024];
+  reader_state_t inputstate;
+
   here = testbuf;
   const_here = constbuf;
+  interpret(NULL, NULL, NULL, NULL, NULL, NULL);
 
-  setvbuf(stdin, NULL, _IONBF, 0);
+  setvbuf(stdin, NULL, _IONBF, 0);   // disable input buffering, we have our own
+  init_reader_state(&inputstate, linebuf, 1024, stdin);
 
-  interpret(NULL, NULL, NULL, NULL, NULL);
-  void **initprog = cfa(find_word("interpret"));
-  interpret(initprog, datastack+1024, returnstack+512, stdin, stdout);
+  void **initprog = cfa(find_word("quit"));
+  interpret(initprog, datastack+1024, returnstack+512, nestingstack+16, &inputstate, stdout);
   return 0;
 }

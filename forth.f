@@ -616,6 +616,15 @@ myclass new value testiotus
     swap -
 ;
 
+(
+: include ( -- )
+word
+open-file
+current-input @ pushtoinputstack
+dup current-input !
+
+)
+
 : welcome
     ." MLT Forth version " version . cr
     ." Welcome!" cr
