@@ -1,0 +1,2 @@
+#!/bin/sh
+cat forth.f - | ./forth
