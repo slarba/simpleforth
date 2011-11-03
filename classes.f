@@ -100,3 +100,7 @@ endclass
     mfree
 ;
 
+hide unimplemented-method
+hide curr-defined-class
+hide curr-defined-class-size
+hide curr-defined-class-vtblsize

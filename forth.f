@@ -402,11 +402,11 @@ variable input-stack
 
 : push-input-stack ( fp -- )
     input-stack @ !
-    input-stack @ cell+ input-stack !
+    cell input-stack +!
 ;
 
 : pop-input-stack ( -- fp )
-    input-stack @ cell- input-stack !
+    cell input-stack -!
     input-stack @ @
 ;
 
