@@ -11,7 +11,14 @@
     3 cells + ;
 
 : send ( ... object method -- ... )
-    over @ vtable-ptr + @ execute ;
+    swap dup >r     \ save self        ( method object )
+    @ vtable-ptr +  \ locate vtable entry ( vtableptr )
+    @ execute       \ execute method
+    rdrop        \ remove self from return stack
+;
+
+: self ( -- self )
+    rsp@ cell+ cell+ @ ;    \ second topmost element of the return stack is self in method calls
 
 variable curr-defined-class
 variable curr-defined-class-size
@@ -57,7 +64,7 @@ variable curr-defined-class-vtblsize
     curr-defined-class-size +!
 ;
 
-: unimplemented-method drop ;
+: unimplemented-method ;
 
 : method ( -- )
     word create
@@ -86,7 +93,7 @@ class: object
     method destruct
     method tostring
 
-    m: s" <object>" swap drop ; implements tostring
+    m: s" <object>" ; implements tostring
 endclass
 
 : new ( classdef -- object )

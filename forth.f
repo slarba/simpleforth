@@ -413,7 +413,7 @@ variable input-stack
 : include ( -- )
     word
     for-reading open-file            ( fp )
-    dup if                           ( fp )
+    ?dup if                           ( fp )
 	<stdin> @ push-input-stack   \ save old stdin
 	<stdin> !                    \ store fp as new stdin
 	begin
@@ -425,7 +425,6 @@ variable input-stack
 	pop-input-stack <stdin> !    \ and restore old stdin
     else
 	." no such file" cr
-	drop
     then
 ;
 
@@ -435,6 +434,17 @@ hide pop-input-stack
 
 include classes.f
 
+class: myotherclass <base object
+   cell var kentta
+
+   m: ." myotherclass constructor!" cr
+       100 self kentta !
+   ; implements construct
+   
+   m: ." myotherclass destructor!" cr
+   ; implements destruct
+endclass
+
 class: myclass <base object
    cell var field1
    cell var field2
@@ -443,14 +453,19 @@ class: myclass <base object
    method method2
    method method3
 
-m:
-    ." construct" cr
-    20 swap field1 !
-; implements construct
+   m: ." construct" cr
+      myotherclass new self field1 !
+   ; implements construct
 
-m:
-    ." destruct" cr drop
-; implements destruct
+   m:
+    ." another method!" cr
+    ." kentta=" self field1 @ kentta @ . cr
+   ; implements method2
+
+   m:
+    ." destruct" cr
+    self field1 @ delete
+   ; implements destruct
 
 endclass
 
@@ -461,5 +476,14 @@ myclass new value testiotus
     ." Welcome!" cr
 ;
 
+: quit
+    begin
+	interpret
+	<stdin> @ ?eof
+    until
+    die
+;
+
 welcome
 hide welcome
+quit
