@@ -85,6 +85,12 @@
 	' open-file of ." open-file" endof
 	' close-file of ." close-file" endof
 	' ?eof of ." ?eof" endof
+	' ccopy of ." ccopy" endof
+	' cmove of ." cmove" endof
+	' c@c! of ." c@c!" endof
+	' strcpy of ." strcpy" endof
+	' strlen of ." strlen" endof
+	' strcmp of ." strcmp" endof
     endcase
 ;
 

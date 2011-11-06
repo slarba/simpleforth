@@ -223,6 +223,13 @@ BYTECODE(CFETCH, "c@", 0, {
     char *ptr = (char*)POP();
     PUSH(*ptr);    
   })
+BYTECODE(BYTECOPY, "c@c!", 0, {
+    char *src = (char*)AT(1);
+    char *dst = (char*)AT(0);
+    *dst++ = *src++;
+    AT(0) = (cell)dst;
+    AT(1) = (cell)src;
+  })
 BYTECODE(TOCFA, ">cfa", 0, {
     dict_hdr_t *ptr = (dict_hdr_t*)POP();
     PUSH((ptr+1));    
@@ -233,11 +240,31 @@ BYTECODE(MALLOC, "malloc", 0, {
     PUSH(malloc(tmp));    
   })
 BYTECODE(MFREE, "mfree", 0, { free((void*)POP()); })
-BYTECODE(CMOVE, "cmove", 0, {
+BYTECODE(CCOPY, "ccopy", 0, {
     tmp = POP();
     void *dst = (void*)POP();
     void *src = (void*)POP();
     memcpy(dst, src, tmp);
+  })
+BYTECODE(CMOVE, "cmove", 0, {
+    tmp = POP();
+    void *dst = (void*)POP();
+    void *src = (void*)POP();
+    memmove(dst, src, tmp);
+  })
+BYTECODE(STRLENGTH, "strlen", 0, {
+    char *str = (char*)POP();
+    PUSH(strlen(str));
+  })
+BYTECODE(STRCOPY, "strcpy", 0, {
+    char *dst = (char*)POP();
+    char *src = (char*)POP();
+    strcpy(dst, src);
+  })
+BYTECODE(STRCOMP, "strcmp", 0, {
+    char *b = (char*)POP();
+    char *a = (char*)POP();
+    PUSH(strcmp(a,b));
   })
 BYTECODE(INTERPRET, "interpret", 0, {
     char *word = read_word(inputstate,linebuf);

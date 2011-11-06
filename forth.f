@@ -383,15 +383,13 @@ consthere @ create immediate
     repeat
     cr
 ;
-    
-: strlen ( str -- len )
-    dup
-    begin
-	dup c@ 0<>
-    while
-	    1+
-    repeat
-    swap -
+
+: make-const-str ( str -- conststr )
+    dup consthere @
+    strcpy
+    consthere @ swap
+    strlen 1+ consthere +!
+    constalign
 ;
 
 : for-reading ( -- mode ) s" r" ;
