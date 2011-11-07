@@ -4,6 +4,8 @@ BYTECODE(CALL, "call", FLAG_HASARG, {
     PUSHRS(ip);
     ip = fn;    
   })
+BYTECODE(NOOP, "noop", 0, {
+  })
 BYTECODE(EXECUTE, "execute", 0, {
     PUSHRS(ip);
     ip = (void**)POP();    
@@ -214,6 +216,10 @@ BYTECODE(FETCH, "@", 0, {
     cell *ptr = (cell*)POP();
     PUSH(*ptr);    
   })
+BYTECODE(VARAT, "var@", FLAG_HASARG, {
+    cell *ptr = (cell*)ARG();
+    PUSH(*ptr);
+  })
 BYTECODE(CSTORE, "c!", 0, {
     char *ptr = (char*)POP();
     tmp = POP();
@@ -289,8 +295,24 @@ BYTECODE(INTERPRET, "interpret", 0, {
       if(entry->flags & FLAG_BUILTIN) {
 	comma((cell)(*cfa(entry)));
       } else {
-	comma((cell) &&l_CALL);
-	comma((cell) cfa(entry));
+	// word inlining
+	if(entry->flags & FLAG_INLINE) {
+	  void **src = cfa(entry);
+	  while(*src!=WORD(EOW)) {
+	    if(*src == WORD(LIT) ||
+	       *src == WORD(CALL) ||
+	       *src == WORD(BRANCH) ||
+	       *src == WORD(0BRANCH) ||
+	       *src == WORD(VARAT)) {
+	      comma((cell)*src++);
+	    }
+	    comma((cell)*src++);
+	  }
+	  here -= sizeof(cell);   // -cell because exit should not be included
+	} else {
+	  comma((cell) &&l_CALL);
+	  comma((cell) cfa(entry));
+	}
       }
     } else {
       void **code = cfa(entry);

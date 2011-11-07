@@ -41,6 +41,7 @@ variable latest-defined-vocab
 : set-vocab-name ( name vocabentry -- ) cell+ ! ;
 : set-vocab-next ( nextentry vocabentry -- ) 2 cells + ! ;
 : set-vocab-latest ( latest vocabentry -- ) ! ;
+: vocab-useslist ( vocabentry -- useslist ) 3 cells + ;
 
 : find-vocabulary ( name -- vocabulary/0 )
     latest-defined-vocab @         ( name latestvocab )
@@ -56,7 +57,7 @@ variable latest-defined-vocab
     swap drop
 ;
 
-: in:
+: in: immediate
     word find-vocabulary
     ?dup if
 	latest @ current-vocab @ set-vocab-latest   \ save latest to current vocabulary
@@ -67,7 +68,7 @@ variable latest-defined-vocab
     then
 ;
 
-: vocabulary:
+: vocabulary: immediate
     word            ( vocabname )
     make-const-str  ( constvocabname )
     consthere @     ( constvocabname vocabulary )
@@ -78,11 +79,8 @@ variable latest-defined-vocab
     latest @
     over set-vocab-latest   ( vocabulary )  \ save latest
     dup latest-defined-vocab !  \ make it the last defined vocab
-    3 cells + consthere !       \ advance consthere
+    vocab-useslist consthere !       \ advance consthere
 ;
-
-vocabulary: forth
-latest-defined-vocab @ current-vocab !
 
 : use:
     word find-vocabulary
@@ -97,9 +95,38 @@ latest-defined-vocab @ current-vocab !
     0 const,   \ terminate uses list
 ;
 
-(
+vocabulary: forth
+latest-defined-vocab @ current-vocab !
+
+definitions:
+
 : find ( wordname -- word )
     dup find    \ try to find from current latest first
-    ?dup
+    ?dup if
+	." -- löytyi suoraan" cr
+	swap drop exit
+    else
+	." -- ei löytyny suoraan..." cr
+	latest @                         ( latest )
+	current-vocab @ vocab-useslist   ( latest useslist )
+	begin
+	    dup @                        ( latest useslist vocabentry/0 )
+	while
+		." -- kierros..." cr
+		dup @ vocab-latest       ( latest useslist usedlatest )
+		latest !                 ( latest useslist )
+		2 pick                   ( latest useslist wordname)
+		find                     ( latest useslist word/0 )
+		?dup if
+		    swap drop swap drop swap drop
+		    exit
+		else
+		    cell+
+		then
+	repeat
+	2drop 0
+	." -- not found!" cr
+    then
 ;
-)
+
+in: forth

@@ -21,6 +21,7 @@
 	' branch  of ." branch ( " next-opcode . ." )" endof
 	' 0branch  of ." 0branch ( " next-opcode . ." )" endof
 	' lit     of ." lit " next-opcode . endof
+	' var@    of ." var@ " next-opcode . endof
 	' dup  of ." dup" endof
 	' 2dup  of ." 2dup" endof
 	' ?dup  of ." ?dup" endof
@@ -80,6 +81,7 @@
 	' hidden  of ." hidden" endof
 	' execute  of ." execute" endof
 	' '  of ." '" endof
+	' noop of ." noop" endof
 	' malloc  of ." malloc" endof
 	' mfree  of ." mfree" endof
 	' open-file of ." open-file" endof
@@ -91,6 +93,7 @@
 	' strcpy of ." strcpy" endof
 	' strlen of ." strlen" endof
 	' strcmp of ." strcmp" endof
+	." ???unknown???"
     endcase
 ;
 

@@ -187,7 +187,7 @@ static void assemble_word(const char *name, cell flags, void **code, cell codesi
 static void create_constant(const char *name, cell value) {
   void *flagdef[] = { get_builtin("lit"), 0, get_builtin("exit") };
   flagdef[1] = (void*)value;
-  assemble_word(name, 0, flagdef, sizeof(flagdef));
+  assemble_word(name, FLAG_INLINE, flagdef, sizeof(flagdef));
 }
 
 static void create_builtin(builtin_word_t *b) {

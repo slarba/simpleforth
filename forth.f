@@ -7,17 +7,31 @@ consthere @ create
 consthere @ create immediate
 ' lit , ' exit , ' , , ' lit , ' eow , ' , , ' latest , ' @ , ' hidden , ' [ , ' exit , ' eow ,
 
-: '\n' 10 ;
-: bl   32 ;
-: cr '\n' emit ;
-: space bl emit ;
-: negate 0 swap - ;
-: true 1 ;
-: false 0 ;
-: not 0= ;
+: inline immediate
+    latest @
+    dup @
+    f_inline xor
+    swap !
+;
 
-: cell+ cellsize + ;
-: cell- cellsize - ;
+: make-inline
+    latest @
+    dup @
+    f_inline xor
+    swap !
+;
+
+: '\n' inline 10 ;
+: bl inline  32 ;
+: cr inline '\n' emit ;
+: space inline bl emit ;
+: negate inline 0 swap - ;
+: true inline 1 ;
+: false inline 0 ;
+: not inline 0= ;
+
+: cell+ inline cellsize + ;
+: cell- inline cellsize - ;
 
 : c, here @ c! here @ 1+ here ! ;
 : const, consthere @ ! consthere @ cell+ consthere ! ;
@@ -25,15 +39,15 @@ consthere @ create immediate
 
 : literal immediate ' lit , , ;
 : char word c@ ;
-: ':' [ char : ] literal ;
-: ';' [ char ; ] literal ;
-: '(' [ char ( ] literal ;
-: ')' [ char ) ] literal ;
-: '"' [ char " ] literal ;
-: 'A' [ char A ] literal ;
-: '0' [ char 0 ] literal ;
-: '-' [ char - ] literal ;
-: '.' [ char . ] literal ;
+: ':' inline [ char : ] literal ;
+: ';' inline [ char ; ] literal ;
+: '(' inline [ char ( ] literal ;
+: ')' inline [ char ) ] literal ;
+: '"' inline [ char " ] literal ;
+: 'A' inline [ char A ] literal ;
+: '0' inline [ char 0 ] literal ;
+: '-' inline [ char - ] literal ;
+: '.' inline [ char . ] literal ;
 
 : hide
     word find hidden ;
@@ -140,8 +154,8 @@ consthere @ create immediate
     drop
 ;
 
-: nip ( x y -- y ) swap drop ;
-: tuck ( x y -- y x y ) swap over ;
+: nip inline ( x y -- y ) swap drop ;
+: tuck inline ( x y -- y x y ) swap over ;
 : pick 1+ cellsize * dsp@ + @ ;
 
 : spaces ( n -- )
@@ -307,15 +321,16 @@ consthere @ create immediate
     here @ swap here +!
 ;
 
-: cell cellsize ;
-: cells cellsize * ;
+: cell inline cellsize ;
+: cells inline cellsize * ;
 
 : variable
-    1 cells allot
-    word create
+    cell allot
+    word create make-inline
     ' lit ,
     ,
     ' exit ,
+    ' eow ,
 ;
 
 : value
@@ -323,6 +338,7 @@ consthere @ create immediate
     ' lit ,
     ,
     ' exit ,
+    ' eow ,
 ;
 
 : to immediate
@@ -392,8 +408,8 @@ consthere @ create immediate
     constalign
 ;
 
-: for-reading ( -- mode ) s" r" ;
-: for-reading-and-writing ( -- mode ) s" r+" ;
+: for-reading ( -- mode ) s" r" ; inline
+: for-reading-and-writing ( -- mode ) s" r+" ; inline
 
 variable input-stack
 16 cells allot input-stack !
