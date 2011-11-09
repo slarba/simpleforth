@@ -33,6 +33,11 @@ consthere @ create immediate
 : cell+ inline cellsize + ;
 : cell- inline cellsize - ;
 
+: str= inline strcmp 0= ;
+: str< inline strcmp 0< ;
+: str> inline strcmp 0> ;
+: str<> inline strcmp ;
+
 : c, here @ c! here @ 1+ here ! ;
 : const, consthere @ ! consthere @ cell+ consthere ! ;
 : constc, consthere @ c! consthere @ 1+ consthere ! ;
@@ -98,6 +103,14 @@ consthere @ create immediate
     ' 0branch ,
     here @ -
     ,
+;
+
+: quit
+    begin
+	interpret
+	<stdin> @ ?eof
+    until
+    die
 ;
 
 : again immediate
@@ -488,14 +501,6 @@ myclass new value testiotus
 : welcome
     ." MLT Forth version " version . cr
     ." Welcome!" cr
-;
-
-: quit
-    begin
-	interpret
-	<stdin> @ ?eof
-    until
-    die
 ;
 
 welcome

@@ -19,24 +19,25 @@ variable pattern-list
     pattern-list !   \ save pattern and replacement list into pattern list
 ;
 
+: save-bytecode find >cfa @ save-code ;
+: save-wildcard -1 save-code ;
+: terminate-list 0 save-code consthere ! ;
+: wildcard? s" ?" str= ;
+
 \ compile pattern into const space
 : p{ immediate ( -- pattern )
     consthere @            ( patt_start )
     dup                    ( patt_start addr )
     begin
 	word                 ( patt_start addr word )
-	dup s" ?" strcmp 0=  ( patt_start addr word iswildcard )
+	dup wildcard?        ( patt_start addr word iswildcard )
 	if
-	    drop
-	    -1 save-code
+	    drop save-wildcard
 	else
-	    dup s" }p" strcmp 0= if
-		drop
-		0 save-code
-		consthere !
-		exit
+	    dup s" }p" str= if
+		drop terminate-list exit
 	    else
-		find >cfa @ save-code
+		save-bytecode
 	    then
 	then
     again
@@ -48,19 +49,15 @@ variable pattern-list
     dup                  ( replacement_start replacement )
     begin
 	word             ( replacement_start replacement word )
-	dup s" ?" strcmp 0=
+	dup wildcard?
 	if
-	    drop
-	    -1 save-code
+	    drop save-wildcard
 	else
-	    dup s" }r" strcmp 0=   ( replacement_start replacement word isendmarker )
+	    dup s" }r" str=   ( replacement_start replacement word isendmarker )
 	    if
-		drop
-		0 save-code
-		consthere !
-		exit
+		drop terminate-list exit
 	    else
-		find >cfa @ save-code
+		save-bytecode
 	    then
 	then
     again
@@ -80,6 +77,9 @@ variable pattern-list
     endcase
 ;
 
+: advance ( addr1 addr2 -- addr1+cell addr2+cell )
+    swap cell+ swap cell+ ;
+
 : match ( codeaddr pattern -- true/false )
     begin
 	over @ over @          ( codeaddr pattern bytecode patterncode )
@@ -94,7 +94,7 @@ variable pattern-list
 		    2drop 0 exit
 		then
 	    then
-	    swap cell+ swap cell+    \ increment addresses
+	    advance
 	then
     again
 ;
@@ -123,7 +123,7 @@ variable pattern-list
 	    else
 		swap !
 	    then
-	    swap cell+ swap cell+
+	    advance
     repeat
     2drop 2drop
 ;
@@ -145,7 +145,24 @@ variable pattern-list
 
 : copy-instr ( dest src -- dest+cell src+cell )
     2dup @ swap !
-    swap cell+ swap cell+
+    advance
+;
+
+: notendofword? ( codeaddr -- true/false ) @ ' eow <> ;
+: isbranch? ( codeaddr -- true/false ) dup @ ' branch = @ ' 0branch = + ;
+
+: update-branch-offsets ( divider startingaddr -- )
+    dup           ( divider startingaddr currentaddr )
+    begin
+	dup notendofword?
+    while
+	    dup isbranch? if
+		dup cell+ @   ( divider startingaddr currentaddr branchoffset )
+		over +        ( divider startingaddr currentaddr branchtarget )
+		dup 4 pick    ( divider startingaddr currentaddr )
+	    else
+	    then
+    repeat
 ;
 
 : recalc-branch-offset ( branchaddress origaddress -- branchaddress )

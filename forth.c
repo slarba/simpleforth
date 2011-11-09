@@ -54,6 +54,7 @@ static dict_hdr_t *latest = NULL;
 
 /* utility functions */
 static dict_hdr_t *find_word(const char *name) {
+  if(!name) return NULL;
   dict_hdr_t *hdr = latest;
   while(hdr) {
     if(!(hdr->flags & FLAG_HIDDEN) &&
@@ -216,6 +217,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
   cell state = STATE_IMMEDIATE;
   cell base = 10;
   cell *s0 = ds;
+  void ***r0 = rs;
   char wordbuf[MAX_WORD_NAME_LEN];
   void **nestingstack_space[NESTINGSTACK_MAX_DEPTH];
   void ***nestingstack = nestingstack_space + NESTINGSTACK_MAX_DEPTH;
@@ -244,6 +246,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("f_hidden", FLAG_HIDDEN);
     create_constant("f_inline", FLAG_INLINE);
     create_constant("s0", (cell) &s0);
+    create_constant("r0", (cell) &r0);
     create_constant("state", (cell) &state);
     create_constant("cellsize", (cell)sizeof(cell));
     create_constant("base", (cell) &base);
