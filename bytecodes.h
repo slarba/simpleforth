@@ -10,6 +10,18 @@ BYTECODE(EXECUTE, "execute", 0, {
     PUSHRS(ip);
     ip = (void**)POP();    
   })
+BYTECODE(IEXEC, "iexecute", 0, {
+    dict_hdr_t *entry = (dict_hdr_t*)POP();
+    void **code = cfa(entry);
+    *--nestingstack = ip;
+    if(entry->flags & FLAG_BUILTIN) {
+      builtin_immediatebuf[0] = *code;
+      ip = builtin_immediatebuf;
+    } else {
+      word_immediatebuf[1] = (void*)code;
+      ip = word_immediatebuf;
+    }
+  })
 BYTECODE(EOW, "eow", 0, { /* end of word marker, do nothing */ })
 BYTECODE(HIDDEN, "hidden", 0, {
     dict_hdr_t *hdr = (dict_hdr_t*)POP();
@@ -60,6 +72,12 @@ BYTECODE(LIT, "lit", FLAG_HASARG, { PUSH(INTARG()); })
 BYTECODE(DUP, "dup", 0, {
     tmp = TOP();
     PUSH(tmp);    
+  })
+BYTECODE(NIP, "nip", 0, {
+    AT(1) = AT(0); ds++;
+  })
+BYTECODE(2NIP, "2nip", 0, {
+    AT(2) = AT(0); ds+=2;
   })
 BYTECODE(2DUP, "2dup", 0, {
     tmp = AT(1);
@@ -186,6 +204,7 @@ BYTECODE(FIND, "find", 0, {
   })
 BYTECODE(CREATE, "create", 0, { create_word((char*)POP(), 0); })
 BYTECODE(WORD, "word", 0, { PUSH(read_word(inputstate, wordbuf)); })
+BYTECODE(IWORD, "iword", 0, { PUSH(read_word(inputstate, linebuf)); })
 BYTECODE(KEY, "key", 0, { PUSH(read_key(inputstate)); })
 BYTECODE(EMIT, "emit", 0, { emit_char(POP(), outp); })
 BYTECODE(ADD1, "1+", 0, { AT(0) += 1; })
@@ -272,6 +291,15 @@ BYTECODE(STRCOMP, "strcmp", 0, {
     char *a = (char*)POP();
     PUSH(strcmp(a,b));
   })
+BYTECODE(PARSENUM, "number", 0, {
+    char *endptr = NULL;
+    char *str = (char*)POP();
+    cell val = (cell)strtol(str, &endptr, base);
+    if(*endptr!='\0') {
+      printf("ERROR: not a valid number: %s\n", str);
+    }
+    else PUSH(val);
+  })
 BYTECODE(INTERPRET, "interpret", 0, {
     char *word = read_word(inputstate,linebuf);
     if(!word) NEXT();
@@ -326,7 +354,7 @@ BYTECODE(INTERPRET, "interpret", 0, {
       }
     }
   })
-BYTECODE(IRETURN, "interpretreturn", 0, {
+BYTECODE(IRETURN, "ireturn", 0, {
     ip = *nestingstack++;    
   })
 BYTECODE(OPENFILE, "open-file", 0, {

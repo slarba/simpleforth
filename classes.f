@@ -1,5 +1,6 @@
 
-( oliomekanismi )
+vocabulary classes
+definitions
 
 : object-size ( classdef -- objsize )
     ;
@@ -99,7 +100,7 @@ endclass
 : new ( classdef -- object )
     dup object-size @ cell+ malloc   ( classdef object )
     2dup !                           ( classdef object )
-    swap drop dup construct send
+    nip dup construct send
 ;
 
 : delete ( object -- )
@@ -111,3 +112,9 @@ hide unimplemented-method
 hide curr-defined-class
 hide curr-defined-class-size
 hide curr-defined-class-vtblsize
+hide vtable-ptr
+hide vtable-size
+hide baseclass-def
+hide object-size
+
+in: forth

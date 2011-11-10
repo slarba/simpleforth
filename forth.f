@@ -7,55 +7,27 @@ consthere @ create
 consthere @ create immediate
 ' lit , ' exit , ' , , ' lit , ' eow , ' , , ' latest , ' @ , ' hidden , ' [ , ' exit , ' eow ,
 
-: inline immediate
-    latest @
-    dup @
-    f_inline xor
-    swap !
-;
-
 : make-inline
-    latest @
-    dup @
-    f_inline xor
+    latest @ dup
+    @ f_inline xor
     swap !
 ;
 
-: '\n' inline 10 ;
-: bl inline  32 ;
-: cr inline '\n' emit ;
-: space inline bl emit ;
-: negate inline 0 swap - ;
-: true inline 1 ;
-: false inline 0 ;
-: not inline 0= ;
+: inline immediate make-inline ;
 
-: cell+ inline cellsize + ;
-: cell- inline cellsize - ;
+: cell inline cellsize ;
+: cells inline cellsize * ;
 
-: str= inline strcmp 0= ;
-: str< inline strcmp 0< ;
-: str> inline strcmp 0> ;
-: str<> inline strcmp ;
+: allot here @ swap here +! ;
 
-: c, here @ c! here @ 1+ here ! ;
-: const, consthere @ ! consthere @ cell+ consthere ! ;
-: constc, consthere @ c! consthere @ 1+ consthere ! ;
-
-: literal immediate ' lit , , ;
-: char word c@ ;
-: ':' inline [ char : ] literal ;
-: ';' inline [ char ; ] literal ;
-: '(' inline [ char ( ] literal ;
-: ')' inline [ char ) ] literal ;
-: '"' inline [ char " ] literal ;
-: 'A' inline [ char A ] literal ;
-: '0' inline [ char 0 ] literal ;
-: '-' inline [ char - ] literal ;
-: '.' inline [ char . ] literal ;
-
-: hide
-    word find hidden ;
+: variable
+    cellsize allot
+    word create make-inline
+    ' lit ,
+    ,
+    ' exit ,
+    ' eow ,
+;
 
 : if immediate
     ' 0branch ,
@@ -79,16 +51,6 @@ consthere @ create immediate
     swap !
 ;
 
-: [compile] immediate
-    word find
-    dup @ f_builtin and
-    if
-	>cfa @ ,
-    else
-	lit call , >cfa ,
-    then
-;
-
 : recurse immediate
     ' call ,
     latest @
@@ -103,14 +65,6 @@ consthere @ create immediate
     ' 0branch ,
     here @ -
     ,
-;
-
-: quit
-    begin
-	interpret
-	<stdin> @ ?eof
-    until
-    die
 ;
 
 : again immediate
@@ -134,10 +88,49 @@ consthere @ create immediate
     swap !
 ;
 
+: [compile] immediate
+    word find
+    dup @ f_builtin and
+    if
+	>cfa @ ,
+    else
+	' call , >cfa ,
+    then
+;
+
 : unless immediate
     ' 0= ,
     [compile] if
 ;
+
+: case immediate 0 ;
+: of immediate
+    ' over ,
+    ' = ,
+    [compile] if
+    ' drop ,
+;
+: endof immediate
+    [compile] else
+;
+: endcase immediate
+    ' drop ,
+    begin ?dup while [compile] then repeat
+;
+
+: '\n' inline 10 ;
+: cr inline '\n' emit ;
+: literal immediate ' lit , , ;
+: char word c@ ;
+: ':' inline [ char : ] literal ;
+: ';' inline [ char ; ] literal ;
+: '(' inline [ char ( ] literal ;
+: ')' inline [ char ) ] literal ;
+: '"' inline [ char " ] literal ;
+: 'A' inline [ char A ] literal ;
+: '0' inline [ char 0 ] literal ;
+: '-' inline [ char - ] literal ;
+: '.' inline [ char . ] literal ;
 
 : \ immediate
     begin
@@ -167,9 +160,171 @@ consthere @ create immediate
     drop
 ;
 
-: nip inline ( x y -- y ) swap drop ;
-: tuck inline ( x y -- y x y ) swap over ;
+( moniriviset
+  kommentit toimii nyt )
+
+: cell+ inline cellsize + ;
+: cell- inline cellsize - ;
+
+: str= inline strcmp 0= ;
+: str< inline strcmp 0< ;
+: str> inline strcmp 0> ;
+: str<> inline strcmp ;
+
+: bl inline  32 ;
+: space inline bl emit ;
+: negate inline 0 swap - ;
+: true inline 1 ;
+: false inline 0 ;
+: not inline 0= ;
+
+: aligned
+    cellsize 1- + cellsize 1- invert and ;
+
+: align here @ aligned here ! ;
+: constalign consthere @ aligned consthere ! ;
+
+: c, here @ c! here @ 1+ here ! ;
+: const, consthere @ ! consthere @ cell+ consthere ! ;
+: constc, consthere @ c! consthere @ 1+ consthere ! ;
+
+: s" immediate
+    state @ if            ( if compiling, emit a lit instruction with the starting pointer )
+	consthere @          ( save string starting pos )
+	begin
+	    key     ( startpos key )
+	    dup '"' <>  ( startpos key notadoublequote )
+	while
+		constc,
+	repeat
+	drop
+	0 constc,  ( null-terminate! )
+	' lit ,
+	,              ( emit starting pos )
+	constalign
+    else
+	consthere @
+	begin
+	    key
+	    dup '"' <>
+	while
+		over c!
+		1+
+	repeat
+	drop
+	0 over c! drop
+	consthere @
+    then
+;
+
+: ." immediate
+    state @ if
+	[compile] s"
+	' tell ,
+    else
+	begin
+	    key
+	    dup '"' = if
+		drop exit
+	    then
+	    emit
+	again
+    then
+;
+
 : pick 1+ cellsize * dsp@ + @ ;
+
+: make-const-str ( str -- conststr )
+    dup consthere @
+    strcpy
+    consthere @ swap
+    strlen 1+ consthere +!
+    constalign
+;
+
+( sanakirjat )
+variable current-vocab
+variable latest-defined-vocab
+
+0 current-vocab !
+0 latest-defined-vocab !
+
+: vocab-name ( vocabentry -- name ) cell+ @ ;
+: vocab-next ( vocabentry -- nextvocabentry/0 ) 2 cells + @ ;
+: vocab-latest ( vocab-entry -- latest ) @ ;
+: set-vocab-name ( name vocabentry -- ) cell+ ! ;
+: set-vocab-next ( nextentry vocabentry -- ) 2 cells + ! ;
+: set-vocab-latest ( latest vocabentry -- ) ! ;
+: vocab-useslist ( vocabentry -- useslist ) 3 cells + ;
+
+: find-vocabulary ( name -- vocabulary/0 )
+    latest-defined-vocab @         ( name latestvocab )
+    begin
+	dup 0= if                  \ is the entry zero?
+	    2drop 0 exit           \ return zero
+	else
+	    2dup vocab-name str<>   \ compare names
+	then
+    while
+	    vocab-next
+    repeat
+    nip
+;
+
+: in: immediate
+    word find-vocabulary
+    ?dup if
+	latest @ current-vocab @ set-vocab-latest   \ save latest to current vocabulary
+	dup current-vocab !                         \ this is the new current vocabulary
+	vocab-latest latest !                       \ get new latest from current vocabulary and save it to latest
+    else
+	." no such vocabulary" cr
+    then
+;
+
+: vocabulary immediate
+    word            ( vocabname )
+    make-const-str  ( constvocabname )
+    consthere @     ( constvocabname vocabulary )
+    2dup set-vocab-name   ( constvocabname vocabulary )
+    nip                   ( vocabulary )
+
+    current-vocab @       ( vocabulary currentvocab )
+    ?dup if
+	latest @ swap set-vocab-latest
+    then
+    latest-defined-vocab @  ( vocabulary latestvocab )
+    over set-vocab-next     ( vocabulary )  \ link them
+    latest @                ( vocabulary currlatest )
+    over set-vocab-latest   ( vocabulary )  \ save latest
+    dup latest-defined-vocab !  \ make it the last defined vocab
+    dup current-vocab !         \ it also becomes the current vocab like with in:
+    vocab-useslist consthere !       \ advance consthere
+;
+
+: use immediate
+    word find-vocabulary
+    ?dup if
+	const,
+    else
+	." no such vocabulary to use" cr
+    then
+;
+
+: definitions immediate
+    0 const,   \ terminate uses list
+;
+
+: vocabularies ( -- )
+    latest-defined-vocab @
+    begin
+	dup
+    while
+	    dup vocab-name tell space
+	    vocab-next
+    repeat
+    drop
+;
 
 : spaces ( n -- )
     begin
@@ -179,11 +334,6 @@ consthere @ create immediate
 	    1-
     repeat
     drop
-;
-
-: depth
-    s0 @ dsp@ -
-    cell-
 ;
 
 : decimal 10 base ! ;
@@ -263,6 +413,128 @@ consthere @ create immediate
 : . 0 .r space ;
 : u. u. space ;
 
+( vocabulary-aware new version of find )
+: find ( wordname -- word )
+    dup find            ( wordname dictentry ) \ try to find from current latest first
+    ?dup if
+	nip exit
+    else
+	latest @                         ( wordname latest )
+	current-vocab @ vocab-useslist   ( wordname latest useslist )
+	begin
+	    dup @                        ( wordname latest useslist vocabentry/0 )
+	while
+		dup @ vocab-latest       ( wordname latest useslist usedlatest )
+		latest !                 ( wordname latest useslist )
+		2 pick                   ( wordname latest useslist wordname)
+		find                     ( wordname latest useslist word/0 )
+		?dup if
+		    nip over latest !
+		    2nip
+		    exit
+		else
+		    cell+
+		then
+	repeat
+	drop latest ! drop 0
+    then
+;
+
+: ?hidden @ f_hidden and ;
+: ?immediate @ f_immediate and ;
+: ?builtin @ f_builtin and ;
+: ?inline @ f_inline and ;
+
+: ' immediate  ( better version of tick )
+    word find
+    dup 0= if
+	." no such word" cr drop
+	exit
+    then
+    dup ?builtin if
+	>cfa @
+    else
+	>cfa
+    then
+    state @ if
+	' lit , ,
+    then
+;
+
+: [compile] immediate
+    word find
+    dup @ f_builtin and
+    if
+	>cfa @ ,
+    else
+	' call , >cfa ,
+    then
+;
+
+vocabulary forth
+definitions
+
+: hide word find hidden ;
+
+hide current-vocab
+hide latest-defined-vocab
+hide vocab-name
+hide vocab-next
+hide vocab-latest
+hide set-vocab-name
+hide set-vocab-next
+hide set-vocab-latest
+hide vocab-useslist
+hide find-vocabulary
+
+: interpret
+    iword
+    dup 0= if
+	drop exit
+    then
+    dup find
+    ?dup if
+	nip
+	dup ?immediate if
+	    iexecute
+	else
+	    state @ if
+		dup ?builtin if
+		    >cfa @ ,
+		else
+		    ' call , >cfa ,
+		then
+	    else
+		iexecute
+	    then
+	then
+    else
+	number
+	state @ if
+	    ' lit ,
+	    ,
+	then
+    then
+;
+
+: quit
+    begin
+	<stdin> @ ?eof not
+    while
+	interpret
+    repeat
+    die
+;
+
+quit
+
+: tuck inline ( x y -- y x y ) swap over ;
+
+: depth
+    s0 @ dsp@ -
+    cell-
+;
+
 : ? @ . ;
 
 : within
@@ -273,77 +545,11 @@ consthere @ create immediate
 	2drop false then
 ;
 
-: aligned
-    cellsize 1- + cellsize 1- invert and ;
-
-: align here @ aligned here ! ;
-: constalign consthere @ aligned consthere ! ;
-
-: s" immediate
-    state @ if            ( if compiling, emit a lit instruction with the starting pointer )
-	consthere @          ( save string starting pos )
-	begin
-	    key     ( startpos key )
-	    dup '"' <>  ( startpos key notadoublequote )
-	while
-		constc,
-	repeat
-	drop
-	0 constc,  ( null-terminate! )
-	' lit ,
-	,              ( emit starting pos )
-	constalign
-    else
-	consthere @
-	begin
-	    key
-	    dup '"' <>
-	while
-		over c!
-		1+
-	repeat
-	drop
-	0 over c! drop
-	consthere @
-    then
-;
-
-: ." immediate
-    state @ if
-	[compile] s"
-	' tell ,
-    else
-	begin
-	    key
-	    dup '"' = if
-		drop exit
-	    then
-	    emit
-	again
-    then
-;
-
 : constant
     word create
     ' lit ,
     ,
     ' exit ,
-;
-
-: allot
-    here @ swap here +!
-;
-
-: cell inline cellsize ;
-: cells inline cellsize * ;
-
-: variable
-    cell allot
-    word create make-inline
-    ' lit ,
-    ,
-    ' exit ,
-    ' eow ,
 ;
 
 : value
@@ -367,21 +573,6 @@ consthere @ create immediate
     then
 ;
 
-: case immediate 0 ;
-: of immediate
-    ' over ,
-    ' = ,
-    [compile] if
-    ' drop ,
-;
-: endof immediate
-    [compile] else
-;
-: endcase immediate
-    ' drop ,
-    begin ?dup while [compile] then repeat
-;
-
 : :noname
     0 create
     here @
@@ -391,11 +582,6 @@ consthere @ create immediate
 : ['] immediate
     ' lit ,
 ;
-
-: ?hidden
-    @ f_hidden and ;
-: ?immediate
-    @ f_immediate and ;
 
 : id. cell+ cell+ tell ;
 
@@ -411,14 +597,6 @@ consthere @ create immediate
 	    cell+ @
     repeat
     cr
-;
-
-: make-const-str ( str -- conststr )
-    dup consthere @
-    strcpy
-    consthere @ swap
-    strlen 1+ consthere +!
-    constalign
 ;
 
 : for-reading ( -- mode ) s" r" ; inline
@@ -461,43 +639,6 @@ hide pop-input-stack
 
 include classes.f
 
-class: myotherclass <base object
-   cell var kentta
-
-   m: ." myotherclass constructor!" cr
-       100 self kentta !
-   ; implements construct
-   
-   m: ." myotherclass destructor!" cr
-   ; implements destruct
-endclass
-
-class: myclass <base object
-   cell var field1
-   cell var field2
-
-   method method1
-   method method2
-   method method3
-
-   m: ." construct" cr
-      myotherclass new self field1 !
-   ; implements construct
-
-   m:
-    ." another method!" cr
-    ." kentta=" self field1 @ kentta @ . cr
-   ; implements method2
-
-   m:
-    ." destruct" cr
-    self field1 @ delete
-   ; implements destruct
-
-endclass
-
-myclass new value testiotus
-
 : welcome
     ." MLT Forth version " version . cr
     ." Welcome!" cr
@@ -505,4 +646,3 @@ myclass new value testiotus
 
 welcome
 hide welcome
-quit
