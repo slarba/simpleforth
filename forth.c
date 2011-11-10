@@ -10,6 +10,9 @@
 #include <string.h>
 #include <limits.h>
 
+/* configuration */
+#define SAFE_INTERPRETER 1
+
 #define FORTH_VERSION 1
 
 /* ---------- limits ---------- */
@@ -227,7 +230,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 
   /* trick: include bytecodes.h with a macro for BYTECODE that produces builtin
    * list elements */
-  #define BYTECODE(label, name, flags, code) { name, &&l_##label, flags },
+  #define BYTECODE(label, name, nargs, flags, code) { name, &&l_##label, flags },
   static builtin_word_t builtins[] = {
     #include "bytecodes.h"
     { NULL, NULL, 0 }
@@ -267,7 +270,12 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 
   NEXT();
 
-  #define BYTECODE(label, name, flags, code) l_##label: code NEXT();
+  #if SAFE_INTERPRETER
+    #define CHECKSTACK(name, amt) if(((ds-s0)/sizeof(cell))<(amt)) { printf("%s: stack underflow\n", (name)); NEXT(); }
+  #else
+    #define CHECKSTACK(name, amt)
+  #endif
+  #define BYTECODE(label, name, nargs, flags, code) l_##label: CHECKSTACK(name, nargs) code NEXT();
   #include "bytecodes.h"
   #undef BYTECODE
 
