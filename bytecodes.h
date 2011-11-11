@@ -53,6 +53,10 @@ BYTECODE(0BRANCH, "0branch", 0, FLAG_HASARG, {
     tmp = INTARG();
     if(!POP()) ip += (tmp/sizeof(void*))-1;    
   })
+BYTECODE(1BRANCH, "1branch", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    if(POP()) ip += (tmp/sizeof(void*))-1;
+  })
 BYTECODE(FROMR, "r>", 0, 0, {
     tmp = (cell)POPRS();
     PUSH(tmp);    
@@ -72,6 +76,10 @@ BYTECODE(LIT, "lit", 0, FLAG_HASARG, { PUSH(INTARG()); })
 BYTECODE(DUP, "dup", 1, 0, {
     tmp = TOP();
     PUSH(tmp);    
+  })
+BYTECODE(DUPAT, "dup@", 1, 0, {
+    cell *addr = (cell*)TOP();
+    PUSH(*addr);
   })
 BYTECODE(NIP, "nip", 2, 0, {
     AT(1) = AT(0); ds++;
@@ -239,6 +247,10 @@ BYTECODE(VARAT, "var@", 0, FLAG_HASARG, {
     cell *ptr = (cell*)ARG();
     PUSH(*ptr);
   })
+BYTECODE(VARTO, "var!", 0, FLAG_HASARG, {
+    cell *ptr = (cell*)ARG();
+    *ptr = POP();
+  })
 BYTECODE(CSTORE, "c!", 2, 0, {
     char *ptr = (char*)POP();
     tmp = POP();
@@ -262,9 +274,9 @@ BYTECODE(TOCFA, ">cfa", 1, 0, {
 BYTECODE(TELL, "tell", 1, 0, { fprintf(stdout, (char*)POP()); })
 BYTECODE(MALLOC, "malloc", 1, 0, {
     tmp = POP();
-    PUSH(malloc(tmp));    
+    PUSH(MALLOC(tmp));    
   })
-BYTECODE(MFREE, "mfree", 1, 0, { free((void*)POP()); })
+BYTECODE(MFREE, "mfree", 1, 0, { FREE((void*)POP()); })
 BYTECODE(CCOPY, "ccopy", 3, 0, {
     tmp = POP();
     void *dst = (void*)POP();
@@ -323,24 +335,8 @@ BYTECODE(INTERPRET, "interpret", 0, 0, {
       if(entry->flags & FLAG_BUILTIN) {
 	comma((cell)(*cfa(entry)));
       } else {
-	// word inlining
-	if(entry->flags & FLAG_INLINE) {
-	  void **src = cfa(entry);
-	  while(*src!=WORD(EOW)) {
-	    if(*src == WORD(LIT) ||
-	       *src == WORD(CALL) ||
-	       *src == WORD(BRANCH) ||
-	       *src == WORD(0BRANCH) ||
-	       *src == WORD(VARAT)) {
-	      comma((cell)*src++);
-	    }
-	    comma((cell)*src++);
-	  }
-	  here -= sizeof(cell);   // -cell because exit should not be included
-	} else {
 	  comma((cell) &&l_CALL);
 	  comma((cell) cfa(entry));
-	}
       }
     } else {
       void **code = cfa(entry);

@@ -1,6 +1,7 @@
 
 CC = gcc-4.3
-CFLAGS = -O4
+CFLAGS = -I./gc/boehmgc/include -O4
+LDFLAGS = -L./gc/boehmgc/lib -lgc
 
 all: forth
 

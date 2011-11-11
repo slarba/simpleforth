@@ -10,6 +10,17 @@
 #include <string.h>
 #include <limits.h>
 
+#define USE_GC 1
+
+#ifdef USE_GC
+ #include <gc.h>
+ #define MALLOC(x) GC_MALLOC(x)
+ #define FREE(x)
+#else
+ #define MALLOC(x) malloc(x)
+ #define FREE(x) free(x)
+#endif
+
 /* configuration */
 #define SAFE_INTERPRETER 1
 
@@ -109,24 +120,24 @@ static void init_reader_state(reader_state_t *state, char *linebuf, cell linebuf
 static reader_state_t *open_file(const char *filename, const char *mode) {
   FILE *fp = fopen(filename, mode);
   if(!fp) return NULL;
-  char *lbuf = malloc(1024);
+  char *lbuf = MALLOC(1024);
   if(!lbuf) goto err_exit;
 
-  reader_state_t *state = (reader_state_t*)malloc(sizeof(reader_state_t));
+  reader_state_t *state = (reader_state_t*)MALLOC(sizeof(reader_state_t));
   if(!state) goto err_exit;
   init_reader_state(state, lbuf, 1024, fp);
   return state;
 
  err_exit:
-  free(lbuf);
+  FREE(lbuf);
   fclose(fp);
   return NULL;
 }
 
 static void close_file(reader_state_t *fp) {
   fclose(fp->stream);
-  free(fp->linebuf);
-  free(fp);
+  FREE(fp->linebuf);
+  FREE(fp);
 }
 
 static cell is_eof(reader_state_t *fp) {
@@ -230,12 +241,12 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 
   /* trick: include bytecodes.h with a macro for BYTECODE that produces builtin
    * list elements */
-  #define BYTECODE(label, name, nargs, flags, code) { name, &&l_##label, flags },
+#define BYTECODE(label, name, nargs, flags, code) { name, &&l_##label, flags },
   static builtin_word_t builtins[] = {
-    #include "bytecodes.h"
+#include "bytecodes.h"
     { NULL, NULL, 0 }
   };
-  #undef BYTECODE
+#undef BYTECODE
 
   /* special case: if ip is NULL, fill the builtins into dictionary */
   if(!ip) {
@@ -270,14 +281,14 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 
   NEXT();
 
-  #if SAFE_INTERPRETER
-    #define CHECKSTACK(name, amt) if(((ds-s0)/sizeof(cell))<(amt)) { printf("%s: stack underflow\n", (name)); NEXT(); }
-  #else
-    #define CHECKSTACK(name, amt)
-  #endif
-  #define BYTECODE(label, name, nargs, flags, code) l_##label: CHECKSTACK(name, nargs) code NEXT();
-  #include "bytecodes.h"
-  #undef BYTECODE
+#if SAFE_INTERPRETER
+ #define CHECKSTACK(name, amt) if(((ds-s0)/sizeof(cell))<(amt)) { printf("%s: stack underflow\n", (name)); NEXT(); }
+#else
+ #define CHECKSTACK(name, amt)
+#endif
+#define BYTECODE(label, name, nargs, flags, code) l_##label: CHECKSTACK(name, nargs) code NEXT();
+#include "bytecodes.h"
+#undef BYTECODE
 
   return;
 }
@@ -290,6 +301,10 @@ static void **returnstack[512];
 int main() {
   char linebuf[1024];
   reader_state_t inputstate;
+
+#ifdef USE_GC
+  GC_INIT();
+#endif
 
   here = testbuf;
   const_here = constbuf;

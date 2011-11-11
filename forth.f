@@ -1,11 +1,30 @@
 58 consthere @ c!
 0  consthere @ 1+ c!
 consthere @ create
-' word , ' create , ' latest , ' @ , ' hidden , ' ] , ' exit , ' eow ,
+' word ,
+' create ,
+' latest ,
+' @ ,
+' hidden ,
+' ] ,
+' exit ,
+' eow ,
+
 59 consthere @ c!
 0  consthere @ 1+ c!
 consthere @ create immediate
-' lit , ' exit , ' , , ' lit , ' eow , ' , , ' latest , ' @ , ' hidden , ' [ , ' exit , ' eow ,
+' lit ,
+' exit ,
+' , ,
+' lit ,
+' eow ,
+' , ,
+' latest ,
+' @ ,
+' hidden ,
+' [ ,
+' exit ,
+' eow ,
 
 : make-inline
     latest @ dup
@@ -487,6 +506,29 @@ hide set-vocab-latest
 hide vocab-useslist
 hide find-vocabulary
 
+: copytohere ( addr -- addr+cellsize )
+    dup @ , cell+
+;
+
+: perform-inline ( codetoinline -- )
+    begin
+	dup @ ' eow <>
+    while
+	    dup @ case
+		' lit of copytohere endof
+		' call of copytohere endof
+		' branch of copytohere endof
+		' 0branch of copytohere endof
+		' 1branch of copytohere endof
+		' var@ of copytohere endof
+		' var! of copytohere endof
+	    endcase
+	    copytohere
+    repeat
+    here @ cell- here !
+    drop
+;
+
 : interpret
     iword
     dup 0= if
@@ -502,7 +544,11 @@ hide find-vocabulary
 		dup ?builtin if
 		    >cfa @ ,
 		else
-		    ' call , >cfa ,
+		    dup ?inline if
+			>cfa perform-inline
+		    else
+			' call , >cfa ,
+		    then
 		then
 	    else
 		iexecute
@@ -527,6 +573,9 @@ hide find-vocabulary
 ;
 
 quit
+
+hide copytohere
+hide perform-inline
 
 : tuck inline ( x y -- y x y ) swap over ;
 
@@ -605,12 +654,12 @@ quit
 variable input-stack
 16 cells allot input-stack !
 
-: push-input-stack ( fp -- )
+: push-input-stack inline ( fp -- )
     input-stack @ !
     cell input-stack +!
 ;
 
-: pop-input-stack ( -- fp )
+: pop-input-stack inline ( -- fp )
     cell input-stack -!
     input-stack @ @
 ;
@@ -637,6 +686,9 @@ hide input-stack
 hide push-input-stack
 hide pop-input-stack
 
+include peephole.f
+opt-word include
+include disasm.f
 include classes.f
 
 : welcome

@@ -1,9 +1,11 @@
 
 ( disassembler )
 
+(
 vocabulary disassembler
 
 definitions
+)
 
 : next-opcode ( opcodeaddr -- opcodeaddr opcode )
     dup @ swap cell+ swap ;
@@ -39,9 +41,12 @@ definitions
 	'' exit    of ." exit" endof
 	'' branch  of ." branch ( " next-opcode . ." )" endof
 	'' 0branch  of ." 0branch ( " next-opcode . ." )" endof
+	'' 1branch  of ." 1branch ( " next-opcode . ." )" endof
 	'' lit     of ." lit " next-opcode . endof
 	'' var@    of ." var@ " next-opcode . endof
+	'' var!    of ." var! " next-opcode . endof
 	'' dup  of ." dup" endof
+	'' dup@ of ." dup@" endof
 	'' 2dup  of ." 2dup" endof
 	'' nip   of ." nip" endof
 	'' 2nip  of ." 2nip" endof
@@ -138,4 +143,6 @@ hide print-address
 hide ''
 hide find-orig-builtin
 
+(
 in: forth
+)

@@ -1,6 +1,75 @@
 ( peephole optimizer )
 
-\ TODO: forward branches in remove-noop before moved block!
+: next-instruction ( codeaddr -- nextcodeaddr )
+    dup @ swap cell+ swap
+    case
+	' lit of cell+ endof
+	' call of cell+ endof
+	' branch of cell+ endof
+	' 0branch of cell+ endof
+	' 1branch of cell+ endof
+	' var@ of cell+ endof
+	' var! of cell+ endof
+    endcase
+;
+
+: ?notendofword ( addr -- addr noteow? )
+    dup @ ' eow <> ;
+
+: ?isbranch ( addr -- addr branch? )
+    dup @
+    case
+	' branch of 1 endof
+	' 0branch of 1 endof
+	' 1branch of 1 endof
+	0 swap
+    endcase
+;
+
+: fixoffset-afterborder ( border offsetaddr offset -- border offsetaddr fixedoffset )
+    dup 0< if           \ backward jump? will it go over the border?
+	2dup +          ( border offsetaddr offset targetaddr )
+	3 pick < if       \ jump over the border?
+	    cell+
+	then
+    \ no, forward jump. no need to do anything
+    then
+;
+
+: fixoffset-beforeborder ( border offsetaddr offset -- border offsetaddr fixedoffset )
+    dup 0> if
+	2dup +
+	3 pick > if
+	    cell-
+	then
+	\ forward jump and not over the border
+    then
+;
+
+: fixoffset ( border offsetaddr offset -- border offsetaddr fixedoffset )
+    2 pick 2 pick > if
+	fixoffset-beforeborder
+    else
+	fixoffset-afterborder
+    then
+;
+
+: fixbranches ( border currinst -- )
+    begin
+	?notendofword
+    while
+	    ?isbranch if
+		cell+              ( border offsetaddr )
+		dup @              ( border offsetaddr offset )
+		fixoffset          ( border offsetaddr fixedoffset )
+		over !
+		cell+
+	    else
+		next-instruction
+	    then
+    repeat
+    2drop
+;
 
 : save-code ( addr code -- addr+cell )
     over ! cell+
@@ -10,12 +79,10 @@ variable pattern-list
 
 : patterns immediate
     here @   \ mark pattern and replacement list start. consists of cell pairs (pattern,replacement)
-    ." patterns start at " dup . cr
 ;
 
 : end-patterns immediate
     0 , 0 ,          \ end of list marker pair
-    ." patterns end at " here @ . cr
     pattern-list !   \ save pattern and replacement list into pattern list
 ;
 
@@ -65,17 +132,6 @@ variable pattern-list
 
 : -> immediate
     , ;
-
-: next-instruction ( codeaddr -- nextcodeaddr )
-    dup @ swap cell+ swap
-    case
-	' lit of cell+ endof
-	' call of cell+ endof
-	' branch of cell+ endof
-	' 0branch of cell+ endof
-	' var@ of cell+ endof
-    endcase
-;
 
 : advance ( addr1 addr2 -- addr1+cell addr2+cell )
     swap cell+ swap cell+ ;
@@ -148,34 +204,6 @@ variable pattern-list
     advance
 ;
 
-: notendofword? ( codeaddr -- true/false ) @ ' eow <> ;
-: isbranch? ( codeaddr -- true/false ) dup @ ' branch = @ ' 0branch = + ;
-
-: update-branch-offsets ( divider startingaddr -- )
-    dup           ( divider startingaddr currentaddr )
-    begin
-	dup notendofword?
-    while
-	    dup isbranch? if
-		dup cell+ @   ( divider startingaddr currentaddr branchoffset )
-		over +        ( divider startingaddr currentaddr branchtarget )
-		dup 4 pick    ( divider startingaddr currentaddr )
-	    else
-	    then
-    repeat
-;
-
-: recalc-branch-offset ( branchaddress origaddress -- branchaddress )
-    swap        ( origaddress branchaddress )
-    dup dup @       ( origaddress branchaddress branchaddress branchamount )
-    +               ( origaddress branchaddress branchtarget )
-    2 pick <= if
-	\ if branch goes outside the moving block, must change the branch amount
-	dup cell swap +!
-    then
-    swap drop   \ leave branchaddress on stack
-;
-
 : remove-noop ( startaddrofmove -- )
     dup dup cell+            ( startaddrofmove currdest nextinstraddr )
     begin
@@ -183,26 +211,30 @@ variable pattern-list
 	    ' lit of copy-instr endof
 	    ' call of copy-instr endof
 	    ' var@ of copy-instr endof
-	    ' branch of copy-instr 2 pick recalc-branch-offset endof
-	    ' 0branch of copy-instr 2 pick recalc-branch-offset endof
+	    ' var! of copy-instr endof
+	    ' branch of copy-instr endof
+	    ' 0branch of copy-instr endof
+	    ' 1branch of copy-instr endof
 	    ' eow of 2drop drop exit endof
 	endcase
 	copy-instr
     again
 ;
 
-: remove-noops ( codeaddr -- )
+: remove-noops ( wordaddr -- )
+    dup                ( wordaddr currinst )
     begin
-	dup @          ( codeaddr opcode )
-	' eow <>       ( codeaddr isnoteow )
+	dup @          ( wordaddr currinst opcode )
+	' eow <>       ( wordaddr currinst isnoteow )
     while
-	    dup @ ' noop = if    ( codeaddr isnoop )
+	    dup @ ' noop = if    ( wordaddr currinst isnoop )
+		dup 2 pick fixbranches
 		dup remove-noop
 	    else
 		next-instruction
 	    then
     repeat
-    drop
+    2drop
 ;
 
 : optimize ( -- )
@@ -222,30 +254,46 @@ patterns
   p{ dup swap }p              -> r{ dup noop }r    ->
   p{ drop drop }p             -> r{ 2drop noop }r  ->
   p{ lit ? @ }p               -> r{ var@ ? noop }r  ->
-
+  p{ lit ? ! }p               -> r{ var! ? noop }r  ->
+  p{ swap drop }p             -> r{ nip noop }r ->
+  p{ swap drop swap drop }p   -> r{ 2nip noop }r ->
+  p{ nip nip }p               -> r{ 2nip noop }r ->
+  p{ over over }p             -> r{ 2dup noop }r ->
+  p{ dup @ }p                 -> r{ dup@ noop }r ->
+  p{ 0= 0branch ? }p          -> r{ noop 1branch ? }r ->
 end-patterns
 
-include disasm.f
+(
+: ; immediate
+    ' exit ,
+    ' eow ,
+    latest @ hidden
+    [
+    optimize ;
+)
 
-: test drop swap swap drop drop dup swap drop ;
-: test2 dup swap drop  ;
-: test3 dup dup drop ;
-
-: koe drop test
-    begin
-	pattern-list @
-	swap swap
-	test2 test3
-	begin
-	    emit
-	    drop drop
-	again
-    again
-    swap drop
-;
-
-' koe disasm
-." ------------" cr
-optimize
-' koe disasm
-
+hide next-instruction
+hide ?notendofword
+hide ?isbranch
+hide fixoffset-afterborder
+hide fixoffset-beforeborder
+hide fixoffset
+hide fixbranches
+hide save-code
+hide patterns
+hide end-patterns
+hide save-bytecode
+hide save-wildcard
+hide terminate-list
+hide wildcard?
+hide p{
+hide r{
+hide ->
+hide advance
+hide match
+hide search-match
+hide replace-pattern
+hide scan-and-replace
+hide copy-instr
+hide remove-noop
+hide remove-noops
