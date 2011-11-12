@@ -65,7 +65,20 @@ BYTECODE(TOR, ">r", 1, 0, {
     tmp = POP();
     PUSHRS(tmp);    
   })
+BYTECODE(2FROMR, "2r>", 0, 0, {
+    tmp = (cell)POPRS();
+    PUSH(tmp);    
+    tmp = (cell)POPRS();
+    PUSH(tmp);    
+  })
+BYTECODE(2TOR, "2>r", 2, 0, {
+    tmp = POP();
+    PUSHRS(tmp);    
+    tmp = POP();
+    PUSHRS(tmp);    
+  })
 BYTECODE(RDROP, "rdrop", 0, 0, { (void)POPRS(); })
+BYTECODE(2RDROP, "2rdrop", 0, 0, { (void)POPRS(); (void)POPRS(); })
 BYTECODE(DSPFETCH, "dsp@", 0, 0, {
     tmp = (cell)ds;
     PUSH(tmp);    
@@ -105,6 +118,13 @@ BYTECODE(SWAP, "swap", 2, 0, {
 BYTECODE(OVER, "over", 2, 0, {
     tmp = AT(1);
     PUSH(tmp);    
+  })
+BYTECODE(TUCK, "tuck", 2, 0, {
+    tmp = AT(1);
+    AT(1) = AT(0);
+    AT(0) = tmp;
+    tmp = AT(1);
+    PUSH(tmp);
   })
 BYTECODE(DROP, "drop", 1, 0, { ++ds; })
 BYTECODE(ROT, "rot", 3, 0, {
@@ -275,6 +295,14 @@ BYTECODE(TELL, "tell", 1, 0, { fprintf(stdout, (char*)POP()); })
 BYTECODE(MALLOC, "malloc", 1, 0, {
     tmp = POP();
     PUSH(MALLOC(tmp));    
+  })
+BYTECODE(REALLOC, "mrealloc", 2, 0, {
+    void *ptr = (void*)POP();
+    tmp = POP();
+    PUSH(REALLOC(ptr,tmp));
+  })
+BYTECODE(RUNGC, "rungc", 0, 0, {
+    RUNGC();
   })
 BYTECODE(MFREE, "mfree", 1, 0, { FREE((void*)POP()); })
 BYTECODE(CCOPY, "ccopy", 3, 0, {

@@ -2,16 +2,16 @@
 vocabulary classes
 definitions
 
-: object-size ( classdef -- objsize )
+: object-size inline ( classdef -- objsize )
     ;
-: baseclass-def ( classdef -- baseclassdef )
+: baseclass-def inline ( classdef -- baseclassdef )
     cell+ ;
-: vtable-size ( classdef -- vtablesize )
+: vtable-size inline ( classdef -- vtablesize )
     2 cells + ;
-: vtable-ptr ( classdef -- vtableptr )
+: vtable-ptr inline ( classdef -- vtableptr )
     3 cells + ;
 
-: send ( ... object method -- ... )
+: send inline ( ... object method -- ... )
     swap dup >r     \ save self        ( method object )
     @ vtable-ptr +  \ locate vtable entry ( vtableptr )
     @ execute       \ execute method
@@ -68,7 +68,7 @@ variable curr-defined-class-vtblsize
 : unimplemented-method ;
 
 : method ( -- )
-    word create
+    word create make-inline
     ' lit ,
     curr-defined-class-vtblsize @ cellsize * ,
     ' exit ,
@@ -97,10 +97,10 @@ class: object
     m: s" <object>" ; implements tostring
 endclass
 
-: new ( classdef -- object )
+: new ( ... classdef -- object )
     dup object-size @ cell+ malloc   ( classdef object )
     2dup !                           ( classdef object )
-    nip dup construct send
+    nip dup >r construct send r>
 ;
 
 : delete ( object -- )

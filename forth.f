@@ -577,7 +577,23 @@ quit
 hide copytohere
 hide perform-inline
 
-: tuck inline ( x y -- y x y ) swap over ;
+: cell+ inline cellsize + ;
+: cell- inline cellsize - ;
+
+: do immediate
+    ' >r , ' >r ,
+    [compile] begin ;
+
+: loop immediate
+    ' r> , ' r> ,
+    ' 1+ ,     \ add loop var
+    ' 2dup , ' >r , ' >r ,
+    ' = ,
+    [compile] until
+    ' rdrop , ' rdrop ,
+;
+
+: i inline ( -- loopvar ) rsp@ cell+ @ ;
 
 : depth
     s0 @ dsp@ -
@@ -690,6 +706,15 @@ include peephole.f
 opt-word include
 include disasm.f
 include classes.f
+
+: looptest
+    10 0
+    do
+        ." laskuri=" i . cr
+    loop
+;
+
+' looptest disasm
 
 : welcome
     ." MLT Forth version " version . cr

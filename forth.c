@@ -15,9 +15,13 @@
 #ifdef USE_GC
  #include <gc.h>
  #define MALLOC(x) GC_MALLOC(x)
+ #define REALLOC(ptr,newlen) GC_REALLOC(ptr,newlen)
+ #define RUNGC() GC_gcollect()
  #define FREE(x)
 #else
  #define MALLOC(x) malloc(x)
+ #define REALLOC(ptr,newlen) realloc(ptr,newlen)
+ #define RUNGC()
  #define FREE(x) free(x)
 #endif
 

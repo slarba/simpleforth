@@ -86,9 +86,23 @@ variable pattern-list
     pattern-list !   \ save pattern and replacement list into pattern list
 ;
 
-: save-bytecode find >cfa @ save-code ;
-: save-wildcard -1 save-code ;
-: terminate-list 0 save-code consthere ! ;
+: save-bytecode
+    dup           ( wordname wordname )
+    find          ( wordname word/0 )
+    ?dup if
+	nip >cfa @
+    else
+	number
+    then
+    save-code
+;
+
+: endpatternmarker inline 2880220587 ;  \ 0xabacadab
+: wildcardmarker inline 3669686970 ; \ 0xdabafaba
+
+: ?endofpattern endpatternmarker = ;
+: save-wildcard wildcardmarker save-code ;
+: terminate-list endpatternmarker save-code consthere ! ;
 : wildcard? s" ?" str= ;
 
 \ compile pattern into const space
@@ -139,11 +153,11 @@ variable pattern-list
 : match ( codeaddr pattern -- true/false )
     begin
 	over @ over @          ( codeaddr pattern bytecode patterncode )
-	dup 0= if              \ if we reached pattern's end, that's a match!
+	dup ?endofpattern if              \ if we reached pattern's end, that's a match!
 	    2drop 2drop 1 exit
 	else                   \ otherwise need to compare the codes
-	    dup -1 = if
-		\ patterncode -1 matches always
+	    dup wildcardmarker = if
+		\ patterncode wildcardmarker matches always
 		2drop
 	    else
 		<> if             \ no match, exit with false
@@ -173,8 +187,8 @@ variable pattern-list
 : replace-pattern ( codeaddr replacementaddr -- )
     begin
 	2dup @       ( codeaddr replacementaddr codeaddr replacement )
-	dup while
-	    dup -1 = if
+	dup ?endofpattern not while
+	    dup wildcardmarker = if
 		2drop   \ leave question marks intact
 	    else
 		swap !
@@ -250,27 +264,52 @@ variable pattern-list
 ;
 
 patterns
+  p{ lit 1 + }p               -> r{ 1+ noop noop }r ->
+  p{ lit 1 - }p               -> r{ 1- noop noop }r ->
+  p{ lit 1 * }p               -> r{ noop noop noop }r ->
+  p{ lit 1 / }p               -> r{ noop noop noop }r ->
+  p{ lit 0 + }p               -> r{ noop noop noop }r ->
+  p{ lit 0 - }p               -> r{ noop noop noop }r ->
+  p{ lit -1 + }p              -> r{ 1- noop noop }r ->
+  p{ lit -1 - }p              -> r{ 1+ noop noop }r ->
+  p{ swap over }p             -> r{ tuck noop }r   ->
   p{ swap swap }p             -> r{ noop noop }r   ->
   p{ dup swap }p              -> r{ dup noop }r    ->
   p{ drop drop }p             -> r{ 2drop noop }r  ->
   p{ lit ? @ }p               -> r{ var@ ? noop }r  ->
   p{ lit ? ! }p               -> r{ var! ? noop }r  ->
-  p{ swap drop }p             -> r{ nip noop }r ->
   p{ swap drop swap drop }p   -> r{ 2nip noop }r ->
+  p{ swap drop }p             -> r{ nip noop }r ->
+  p{ nip nip nip }p           -> r{ 2nip nip noop }r ->
   p{ nip nip }p               -> r{ 2nip noop }r ->
   p{ over over }p             -> r{ 2dup noop }r ->
   p{ dup @ }p                 -> r{ dup@ noop }r ->
   p{ 0= 0branch ? }p          -> r{ noop 1branch ? }r ->
+  p{ 0<> 0branch ? }p         -> r{ noop 0branch ? }r ->
+  p{ r> r> }p                 -> r{ 2r> noop }r ->
+  p{ >r >r }p                 -> r{ 2>r noop }r ->
+  p{ rdrop rdrop }p           -> r{ 2rdrop noop }r ->
+  p{ rot -rot }p              -> r{ noop noop }r ->
+  p{ -rot rot }p              -> r{ noop noop }r ->
+  p{ dup drop }p              -> r{ noop noop }r ->
+  p{ over drop }p             -> r{ noop noop }r ->
 end-patterns
 
-(
-: ; immediate
-    ' exit ,
-    ' eow ,
-    latest @ hidden
-    [
-    optimize ;
-)
+s" ;" create immediate
+' lit ,
+' exit ,
+' , ,
+' lit ,
+' eow ,
+' , ,
+' latest ,
+' @ ,
+' hidden ,
+' call ,
+' optimize ,
+' [ ,
+' exit ,
+' eow ,
 
 hide next-instruction
 hide ?notendofword

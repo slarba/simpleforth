@@ -55,8 +55,13 @@ definitions
 	'' drop  of ." drop" endof
 	'' 2drop  of ." 2drop" endof
 	'' /mod of ." /mod" endof
+	'' 2>r of ." 2>r" endof
+	'' 2r> of ." 2r>" endof
 	'' >r  of ." >r" endof
 	'' r>  of ." r>" endof
+	'' tuck of ." tuck" endof
+	'' rdrop of ." rdrop" endof
+	'' 2rdrop of ." 2rdrop" endof
 	'' rsp@  of ." rsp@" endof
 	'' rsp!  of ." rsp!" endof
 	'' over  of ." over" endof
@@ -112,6 +117,7 @@ definitions
 	'' '  of ." '" endof
 	'' noop of ." noop" endof
 	'' malloc  of ." malloc" endof
+	'' mrealloc of ." mrealloc" endof
 	'' mfree  of ." mfree" endof
 	'' open-file of ." open-file" endof
 	'' close-file of ." close-file" endof
