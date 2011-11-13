@@ -355,8 +355,8 @@ variable latest-defined-vocab
     drop
 ;
 
-: decimal 10 base ! ;
-: hex 16 base ! ;
+: decimal immediate 10 base ! ;
+: hex immediate 16 base ! ;
 
 : u. ( u -- )
     base @ /mod

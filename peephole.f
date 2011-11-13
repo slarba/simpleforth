@@ -97,8 +97,8 @@ variable pattern-list
     save-code
 ;
 
-: endpatternmarker inline 2880220587 ;  \ 0xabacadab
-: wildcardmarker inline 3669686970 ; \ 0xdabafaba
+: endpatternmarker inline hex 1badedda decimal ;
+: wildcardmarker inline hex 2dabafab decimal ;
 
 : ?endofpattern endpatternmarker = ;
 : save-wildcard wildcardmarker save-code ;
