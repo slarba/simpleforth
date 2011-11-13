@@ -41,6 +41,7 @@
 #define FLAG_BUILTIN     BIT(2)
 #define FLAG_HASARG      BIT(3)
 #define FLAG_INLINE      BIT(4)
+#define FLAG_DEFERRED    BIT(5)
 
 /* ---------- compiler state ---------- */
 #define STATE_IMMEDIATE 0
@@ -263,6 +264,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("f_immediate", FLAG_IMMED);
     create_constant("f_hidden", FLAG_HIDDEN);
     create_constant("f_inline", FLAG_INLINE);
+    create_constant("f_deferred", FLAG_DEFERRED);
     create_constant("s0", (cell) &s0);
     create_constant("r0", (cell) &r0);
     create_constant("state", (cell) &state);

@@ -37,6 +37,7 @@ definitions
     next-opcode
     case
 	'' call  of ." call <" next-opcode print-call-target ." >" endof
+	'' jump of ." jump <" next-opcode print-call-target ." >" endof
 	'' die     of ." die" endof
 	'' exit    of ." exit" endof
 	'' branch  of ." branch ( " next-opcode . ." )" endof

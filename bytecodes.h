@@ -1,4 +1,8 @@
 BYTECODE(LATEST, "latest", 0, 0, { PUSH(&latest); })
+BYTECODE(JUMP, "jump", 0, FLAG_HASARG, {
+    void *fn = ARG();
+    ip = fn;
+  })
 BYTECODE(CALL, "call", 0, FLAG_HASARG, { 
     void *fn = ARG();
     PUSHRS(ip);
@@ -82,6 +86,10 @@ BYTECODE(2RDROP, "2rdrop", 0, 0, { (void)POPRS(); (void)POPRS(); })
 BYTECODE(DSPFETCH, "dsp@", 0, 0, {
     tmp = (cell)ds;
     PUSH(tmp);    
+  })
+BYTECODE(DSPSTORE, "dsp!", 1, 0, {
+    cell *newds = (cell*)POP();
+    ds = newds;
   })
 BYTECODE(RSPPUT, "rsp!", 1, 0, { rs = (void***)POP(); })
 BYTECODE(RSPGET, "rsp@", 0, 0, { PUSH(rs); })

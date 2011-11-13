@@ -5,6 +5,7 @@
     case
 	' lit of cell+ endof
 	' call of cell+ endof
+	' jump of cell+ endof
 	' branch of cell+ endof
 	' 0branch of cell+ endof
 	' 1branch of cell+ endof
@@ -224,6 +225,7 @@ variable pattern-list
 	dup @ case
 	    ' lit of copy-instr endof
 	    ' call of copy-instr endof
+	    ' jump of copy-instr endof
 	    ' var@ of copy-instr endof
 	    ' var! of copy-instr endof
 	    ' branch of copy-instr endof

@@ -517,6 +517,7 @@ hide find-vocabulary
 	    dup @ case
 		' lit of copytohere endof
 		' call of copytohere endof
+		' jump of copytohere endof
 		' branch of copytohere endof
 		' 0branch of copytohere endof
 		' 1branch of copytohere endof
@@ -563,7 +564,14 @@ hide find-vocabulary
     then
 ;
 
+variable quit-level
+0 quit-level !
+
 : quit
+    1 quit-level +!
+    quit-level @ 2 > if
+	." use print-stack-trace to view what happened" cr
+    then
     begin
 	<stdin> @ ?eof not
     while
@@ -573,6 +581,50 @@ hide find-vocabulary
 ;
 
 quit
+
+: defer immediate
+    word create
+    latest @ @ f_deferred xor latest @ !
+    ' jump ,
+    0 ,
+    ' exit ,
+    ' eow ,
+;
+
+: is immediate
+    word find
+    ?dup if
+	>cfa cell+ !
+    else
+	." no such word" cr
+    then
+;
+
+: create ( wordname )
+    dup find       ( wordname previousdef )
+    ?dup if    \ if previous definition was found
+	dup @ f_deferred and if  \ and it was deferred
+	    over create    \ create new word  ( wordname dictentry )
+	    >cfa cell+     ( wordname callptr )
+	    latest @ >cfa  ( wordname callptr newwordimpl )
+	    swap !
+	    drop      \ wordname
+	    exit
+	then
+	drop
+    then    
+    create
+;
+
+\ new version of colon to support deferred words-aware create
+: :
+    word       ( wordname )
+    create
+    latest
+    @
+    hidden
+    ]
+;
 
 hide copytohere
 hide perform-inline
@@ -702,6 +754,90 @@ hide input-stack
 hide push-input-stack
 hide pop-input-stack
 
+: exception-marker
+    rdrop 0
+;
+
+: catch
+    dsp@ cell+ >r
+    ' exception-marker >r
+    execute
+;
+
+: throw ( n -- )
+    ?dup if
+	rsp@                         ( n rsp )
+	begin
+	    dup r0 @ cell- <
+	while
+		dup @
+		' exception-marker = if
+		    cell+
+		    rsp!
+		    dup dup dup
+		    r>
+		    cell-
+		    swap over
+		    !
+		    dsp! exit
+		then
+		cell+
+	repeat
+
+	drop
+	case
+	    0 1- of ." aborted" cr endof
+	    
+	    ." uncaught throw " dup . cr
+	endcase
+	quit
+    then
+;
+
+: bar 25 throw ;
+: foo bar ;
+: test-exceptions
+    foo
+    ?dup if
+	." called FOO and it threw exception number: "
+	. cr
+    then
+;
+
+: lookup-word-from-ip
+    latest @              ( codeaddr latest )
+    begin
+	?dup
+    while
+	    2dup swap     ( codeaddr latest latest codeaddr )
+	    < if
+		nip
+		exit
+	    then
+	    cell+ @
+    repeat
+    drop 0
+;
+
+: print-stack-trace
+    rsp@
+    begin
+	dup r0 @ cell- <
+    while
+	    dup @
+	    case
+		' exception-marker of ." catch ( dsp=" cell+ dup @ u. ." ) " cr endof
+
+		dup
+		lookup-word-from-ip
+		id. cr
+	    endcase
+	    cell+
+    repeat
+    drop
+    cr
+;
+
 include peephole.f
 opt-word include
 include disasm.f
@@ -723,3 +859,4 @@ include classes.f
 
 welcome
 hide welcome
+quit
