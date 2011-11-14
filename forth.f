@@ -821,7 +821,7 @@ opt-word include
 : print-stack-trace
     rsp@
     begin
-	dup r0 @ cell- <
+	dup r0 @ cell- <>
     while
 	    dup @
 	    case
