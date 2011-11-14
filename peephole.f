@@ -4,6 +4,8 @@
     dup @ swap cell+ swap
     case
 	' lit of cell+ endof
+	' lit+ of cell+ endof
+	' lit- of cell+ endof
 	' call of cell+ endof
 	' jump of cell+ endof
 	' branch of cell+ endof
@@ -83,7 +85,7 @@ variable pattern-list
 ;
 
 : end-patterns immediate
-    0 , 0 ,          \ end of list marker pair
+    , 0 , 0 ,          \ end of list marker pair
     pattern-list !   \ save pattern and replacement list into pattern list
 ;
 
@@ -224,6 +226,8 @@ variable pattern-list
     begin
 	dup @ case
 	    ' lit of copy-instr endof
+	    ' lit+ of copy-instr endof
+	    ' lit- of copy-instr endof
 	    ' call of copy-instr endof
 	    ' jump of copy-instr endof
 	    ' var@ of copy-instr endof
@@ -266,35 +270,39 @@ variable pattern-list
 ;
 
 patterns
-  p{ lit 1 + }p               -> r{ 1+ noop noop }r ->
-  p{ lit 1 - }p               -> r{ 1- noop noop }r ->
-  p{ lit 1 * }p               -> r{ noop noop noop }r ->
-  p{ lit 1 / }p               -> r{ noop noop noop }r ->
-  p{ lit 0 + }p               -> r{ noop noop noop }r ->
-  p{ lit 0 - }p               -> r{ noop noop noop }r ->
-  p{ lit -1 + }p              -> r{ 1- noop noop }r ->
-  p{ lit -1 - }p              -> r{ 1+ noop noop }r ->
-  p{ swap over }p             -> r{ tuck noop }r   ->
-  p{ swap swap }p             -> r{ noop noop }r   ->
-  p{ dup swap }p              -> r{ dup noop }r    ->
-  p{ drop drop }p             -> r{ 2drop noop }r  ->
-  p{ lit ? @ }p               -> r{ var@ ? noop }r  ->
-  p{ lit ? ! }p               -> r{ var! ? noop }r  ->
-  p{ swap drop swap drop }p   -> r{ 2nip noop }r ->
-  p{ swap drop }p             -> r{ nip noop }r ->
-  p{ nip nip nip }p           -> r{ 2nip nip noop }r ->
-  p{ nip nip }p               -> r{ 2nip noop }r ->
-  p{ over over }p             -> r{ 2dup noop }r ->
-  p{ dup @ }p                 -> r{ dup@ noop }r ->
-  p{ 0= 0branch ? }p          -> r{ noop 1branch ? }r ->
-  p{ 0<> 0branch ? }p         -> r{ noop 0branch ? }r ->
-  p{ r> r> }p                 -> r{ 2r> noop }r ->
-  p{ >r >r }p                 -> r{ 2>r noop }r ->
-  p{ rdrop rdrop }p           -> r{ 2rdrop noop }r ->
-  p{ rot -rot }p              -> r{ noop noop }r ->
-  p{ -rot rot }p              -> r{ noop noop }r ->
-  p{ dup drop }p              -> r{ noop noop }r ->
-  p{ over drop }p             -> r{ noop noop }r ->
+  p{ lit 1 + }p               -> r{ 1+ noop noop }r  ,
+  p{ lit 1 - }p               -> r{ 1- noop noop }r  ,
+  p{ lit 1 * }p               -> r{ noop noop noop }r ,
+  p{ lit 1 / }p               -> r{ noop noop noop }r ,
+  p{ lit 0 + }p               -> r{ noop noop noop }r ,
+  p{ lit 0 - }p               -> r{ noop noop noop }r ,
+  p{ lit -1 + }p              -> r{ 1- noop noop }r ,
+  p{ lit -1 - }p              -> r{ 1+ noop noop }r ,
+  p{ swap over }p             -> r{ tuck noop }r   ,
+  p{ swap swap }p             -> r{ noop noop }r   ,
+  p{ dup swap }p              -> r{ dup noop }r    ,
+  p{ drop drop }p             -> r{ 2drop noop }r  ,
+  p{ lit ? + }p               -> r{ lit+ ? noop }r ,
+  p{ lit ? - }p               -> r{ lit- ? noop }r ,
+  p{ lit ? @ }p               -> r{ var@ ? noop }r  ,
+  p{ lit ? ! }p               -> r{ var! ? noop }r  ,
+  p{ swap drop swap drop }p   -> r{ 2nip noop }r ,
+  p{ swap drop }p             -> r{ nip noop }r ,
+  p{ nip nip nip }p           -> r{ 2nip nip noop }r ,
+  p{ nip nip }p               -> r{ 2nip noop }r ,
+  p{ over over }p             -> r{ 2dup noop }r ,
+  p{ dup @ }p                 -> r{ dup@ noop }r ,
+  p{ 0= 0branch ? }p          -> r{ noop 1branch ? }r ,
+  p{ 0<> 0branch ? }p         -> r{ noop 0branch ? }r ,
+  p{ r> r> }p                 -> r{ 2r> noop }r ,
+  p{ >r >r }p                 -> r{ 2>r noop }r ,
+  p{ >r r> }p                 -> r{ noop noop }r ,
+  p{ r> >r }p                 -> r{ noop noop }r ,
+  p{ rdrop rdrop }p           -> r{ 2rdrop noop }r ,
+  p{ rot -rot }p              -> r{ noop noop }r ,
+  p{ -rot rot }p              -> r{ noop noop }r ,
+  p{ dup drop }p              -> r{ noop noop }r ,
+  p{ over drop }p             -> r{ noop noop }r
 end-patterns
 
 s" ;" create immediate

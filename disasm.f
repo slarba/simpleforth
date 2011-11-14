@@ -44,6 +44,8 @@ definitions
 	'' 0branch  of ." 0branch ( " next-opcode . ." )" endof
 	'' 1branch  of ." 1branch ( " next-opcode . ." )" endof
 	'' lit     of ." lit " next-opcode . endof
+	'' lit+    of ." lit+ " next-opcode . endof
+	'' lit-    of ." lit- " next-opcode . endof
 	'' var@    of ." var@ " next-opcode . endof
 	'' var!    of ." var! " next-opcode . endof
 	'' dup  of ." dup" endof

@@ -94,6 +94,8 @@ BYTECODE(DSPSTORE, "dsp!", 1, 0, {
 BYTECODE(RSPPUT, "rsp!", 1, 0, { rs = (void***)POP(); })
 BYTECODE(RSPGET, "rsp@", 0, 0, { PUSH(rs); })
 BYTECODE(LIT, "lit", 0, FLAG_HASARG, { PUSH(INTARG()); })
+BYTECODE(LITPLUS, "lit+", 0, FLAG_HASARG, { AT(0) += INTARG(); })
+BYTECODE(LITMINUS, "lit-", 0, FLAG_HASARG, { AT(0) -= INTARG(); })
 BYTECODE(DUP, "dup", 1, 0, {
     tmp = TOP();
     PUSH(tmp);    

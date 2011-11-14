@@ -516,6 +516,8 @@ hide find-vocabulary
     while
 	    dup @ case
 		' lit of copytohere endof
+		' lit+ of copytohere endof
+		' lit- of copytohere endof
 		' call of copytohere endof
 		' jump of copytohere endof
 		' branch of copytohere endof
