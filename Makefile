@@ -1,12 +1,16 @@
 
 CC = gcc-4.3
-CFLAGS = -I./gc/boehmgc/include -O4
-LDFLAGS = -L./gc/boehmgc/lib -lgc
+PROF=-ftest-coverage -fprofile-arcs
+CFLAGS = -g -I./gc/boehmgc/include $(PROF)
+LDFLAGS = -L./gc/boehmgc/lib $(PROF) -lgc
 
-all: forth
+all: forth.S forth forth
 
 clean:
-	rm -f forth core *.o *~
+	rm -f forth core gmon.out *.gcov *.gcno *.gcda *.o *.S *~
+
+forth.S: forth.c bytecodes.h
+	$(CC) -c -S $(CFLAGS) -o forth.S forth.c
 
 forth.o: forth.c bytecodes.h
 
