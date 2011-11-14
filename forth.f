@@ -129,6 +129,10 @@ consthere @ create immediate
     [compile] if
     ' drop ,
 ;
+: (of) immediate
+    [compile] if
+    ' drop ,
+;
 : endof immediate
     [compile] else
 ;

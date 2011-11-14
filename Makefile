@@ -3,7 +3,7 @@ CONFFLAGS=-DUSE_GC=1 -DSAFE_INTERPRETER=1
 CC = gcc-4.3
 # PROF=-ftest-coverage -fprofile-arcs
 PROF=
-CFLAGS = -Wall $(CONFFLAGS) -g -I./gc/boehmgc/include $(PROF)
+CFLAGS = -Wall $(CONFFLAGS) -O4 -I./gc/boehmgc/include $(PROF)
 LDFLAGS = -L./gc/boehmgc/lib $(PROF) -lgc
 
 all: forth.S forth forth

@@ -1,0 +1,106 @@
+
+Tulkkien ja virtuaalikoneiden sielunelämästä
+
+- esimerkkinä tarkastellaan pientä Forth-toteutusta
+
+Forth crash course
+
+- forth-ohjelmat koostuvat whitespacella erotetuista sanoista
+  - ei monimutkaisia parsereita, AST:tä jne... ohjelmoija kirjoittaa käytännössä virtuaalikoneen tavukoodia, with a twist
+- sanat operoivat ns. argumenttipinon kautta, kuluttaen ja tuottaen arvoja pinoon. arvot aina samanlevyisiä (32 tai 64bit)
+- säännöt: numeroksi parsiutuva sana menee sellaisenaan pinoon
+           numeroksi parsiutumaton sana on joko virtuaalikoneen primitiivi, tai käyttäjän (primitiiveistä ja toisista sanoista) 
+           kasaama sana
+
+2*(3+5) kirjoitettaisiin:
+
+2 3 5 + *     pinoon jää 16
+tai
+3 5 + 2 *
+
+- käyttäjän sanat tallennetaan ns. sanakirjaan, joka on linkitetty lista simppeleitä tietorakenteita:
+
+struct dict_hdr_t {
+   long flags;
+   struct dict_hdr_t *next;    // tai NULL jos lista päättyy
+   char name[32];              // sanan nimi
+   // tavukoodia
+   // ...
+};
+
+- sanakirjaan viimeisimpänä tallennetun sanan headerin osoite on tallessa erityisessä muuttujassa (ns. latest), toimii
+  lähtöpisteenä sanojen etsimiselle ja luomiselle.
+
+- sanat varataan data-alueesta, joka on "allocate only": vapauttaa ei voi. seuraavan vapaan muistin osoite on taas erityisessä
+  muuttujassa (ns. here). here voi siis vain mennä eteenpäin...
+
+- muutamia tärkeitä virtuaalikoneen primitiivejä:
+  - word          - lukee sanan streamista (stdin tai file) puskuriin ja laittaa ko. puskurin osoitteen pinon päälle
+  - find          - ottaa sanan nimen osoitteen pinosta, etsii latest:sta alkaen sanaa ja palauttaa sanan headerin osoitteen
+                    tai nollan (jos ei löytynyt) pinon päällimmäiseksi arvoksi
+  - create        - ottaa sanan nimen osoitteen pinosta, rakentaa sanan headerin data-alueesta (here lisääntyy) ja linkittää
+                    latest:n uuden sanan seuraavaksi sanaksi. latest päivittyy juuri luotuun sanaan
+  - number        - ottaa sanan nimen osoitteen pinosta ja koettaa parsia siitä luvun, laittaen sen pinon päällimmäiseksi
+  - latest        - laittaa viimeisimmän sanan osoitteen pinon päälle (itse asiassa osoittimen viimeisimmän sanan osoitteeseen)
+  - here          - data-alueen ensimmäisen vapaan alueen osoite pinon päälle
+  - emit          - ottaa pinon päältä arvon, ja tulostaa arvoa vastaavan ascii-merkin streamiin (stdout tai file)
+
+- virtuaalikoneen "ohjelmalaskuri" (instruction pointer) osoittaa aina seuraavaan suoritettavaan primitiiviin
+- haarautumisprimitiiveillä voidaan ohjelmalaskuria muuttaa esim. pinon päällimmäisen arvon perusteella (vähennä/lisää
+  laskuria n pykälää jos pinon päällimmäinen arvo oli 0 tai erisuuri kuin 0)
+
+  - branch, 0branch, 1branch (<>0branch itse asiassa)
+
+- käyttäjän sanaa kutsutaan primitiivillä "call", jonka argumenttina on sanakirjan headeria seuraava tavukoodin osoite
+- sanasta palataan primitiivillä "exit"
+  - kutsupino on erillinen pino, johon call tallentaa itseään seuraavan tavukoodin osoitteen
+  - exit "poppaa" tämän osoitteen takaisin ohjelmalaskurin arvoksi
+
+- muita primitiivejä:
+  aritmetiikka: +, -, *, /, mod jne
+  loogiset: and, or, xor, invert
+  muistista luku ja muistiin kirjoitus: @, !, c@, c!     (@ hakee muistista, ! tallettaa, c on tavuversio)
+  pinon organisointi: dup, swap, drop, over, rot, -rot, nip, tuck jne
+
+Lisää sanoista:
+
+- sanoilla on kaksi merkitystä: käännösaikainen ja tulkkausaikainen!
+- käännösaikainen merkitys: primitiivin tavukoodi tai call-kutsu käyttäjän määrittelemään sanaan lisätään here-pointterin päähän ja hereä
+  lisätään vastaavasti
+- tulkkausaikainen merkitys: sana suoritetaan heti
+  - käännösmoodissa esim. luvut generoivat primitiivin "lit" here:n päähän ja itse numero heti sen jälkeen
+
+- ns immediate-sanat (headerin flags-kentässä oleva bitti) suoritetaan välittömästi oltiimpa käännöstilassa tai ei! -> mahdollisuus
+  generoida tavukoodia ohjelmallisesti :)
+- käännös/tulkkausmoodia voi vaihtaa primitiiveillä "[" (siirry tulkkausmoodiin) ja "]" (siirry käännösmoodiin)
+
+Itse tulkki eli INTERPRET-primitiivi
+
+- minimalistisin mahdollinen toiminta pseudokoodina:
+
+   lue sana streamista
+   etsi sana sanakirjasta (lähtien latest:sta)
+   IF sana löytyi THEN
+     IF käännösmoodissa AND sana ei ole immediate-sana THEN
+        laita sanan tavukoodi tai generoi CALL-kutsu here-pointterin päähän ja lisää here:ä
+     ELSE
+        suorita sana heti
+     ENDIF
+   ELSE
+     sanaa ei löytynyt, koeta parsia siitä numero
+     IF parsinta onnistui THEN
+       IF käännösmoodi? THEN
+         generoi LIT <numero> here:n päähän ja lisää here:ä
+       ELSE
+         laita <numero> pinon päällimmäiseksi
+       ENDIF
+     ELSE
+       tulosta "ei löydy sanaa"
+     ENDIF
+   ENDIF
+
+tulkki saadaan siis pyörimään seuraavalla virtuaalikoneen omalla tavukoodisekvenssillä:
+
+loop:
+  INTERPRET
+  BRANCH loop
