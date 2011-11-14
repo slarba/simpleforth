@@ -584,6 +584,10 @@ variable quit-level
 
 quit
 
+( redefine to inline )
+: cell inline cellsize ;
+: cells inline cellsize * ;
+
 : defer immediate
     word create
     latest @ @ f_deferred xor latest @ !
@@ -756,6 +760,9 @@ hide input-stack
 hide push-input-stack
 hide pop-input-stack
 
+include peephole.f
+opt-word include
+
 : exception-marker
     rdrop 0
 ;
@@ -796,16 +803,6 @@ hide pop-input-stack
     then
 ;
 
-: bar 25 throw ;
-: foo bar ;
-: test-exceptions
-    foo
-    ?dup if
-	." called FOO and it threw exception number: "
-	. cr
-    then
-;
-
 : lookup-word-from-ip
     latest @              ( codeaddr latest )
     begin
@@ -840,9 +837,8 @@ hide pop-input-stack
     cr
 ;
 
-include peephole.f
-opt-word include
 include disasm.f
+include debugger.f
 include classes.f
 
 : looptest

@@ -75,6 +75,7 @@ definitions
 	'' create  of ." create" endof
 	'' iword of ." iword" endof
 	'' iexecute of ." iexecute" endof
+	'' exec-builtin of ." exec-builtin" endof
 	'' word  of ." word" endof
 	'' key  of ." key" endof
 	'' emit  of ." emit" endof
@@ -87,6 +88,7 @@ definitions
 	'' +!  of ." +!" endof
 	'' -!  of ." -!" endof
 	'' +  of ." +" endof
+	'' bi+ of ." bi+" endof
 	'' - of ." -" endof
 	'' *  of ." *" endof
 	'' /  of ." /" endof
@@ -110,6 +112,7 @@ definitions
 	'' >cfa  of ." >cfa" endof
 	'' ,  of ." ," endof
 	'' dsp@  of ." dsp@" endof
+	'' dsp!  of ." dsp!" endof
 	'' @  of ." @" endof
 	'' c@  of ." c@" endof
 	'' !  of ." !" endof

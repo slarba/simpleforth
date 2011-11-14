@@ -1,5 +1,5 @@
 
-CONFFLAGS=-DUSE_GC=1 # -DSAFE_INTERPRETER=1
+CONFFLAGS=-DUSE_GC=1 -DSAFE_INTERPRETER=1
 CC = gcc-4.3
 # PROF=-ftest-coverage -fprofile-arcs
 PROF=

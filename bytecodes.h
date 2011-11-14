@@ -14,6 +14,11 @@ BYTECODE(EXECUTE, "execute", 1, 0, {
     PUSHRS(ip);
     ip = (void**)POP();    
   })
+BYTECODE(BUITINEXEC, "exec-builtin", 1, 0, {
+    *--nestingstack = ip;
+    builtin_immediatebuf[0] = (void*)POP();
+    ip = builtin_immediatebuf;
+  })
 BYTECODE(IEXEC, "iexecute", 1, 0, {
     dict_hdr_t *entry = (dict_hdr_t*)POP();
     void **code = cfa(entry);
@@ -94,8 +99,8 @@ BYTECODE(DSPSTORE, "dsp!", 1, 0, {
 BYTECODE(RSPPUT, "rsp!", 1, 0, { rs = (void***)POP(); })
 BYTECODE(RSPGET, "rsp@", 0, 0, { PUSH(rs); })
 BYTECODE(LIT, "lit", 0, FLAG_HASARG, { PUSH(INTARG()); })
-BYTECODE(LITPLUS, "lit+", 0, FLAG_HASARG, { AT(0) += INTARG(); })
-BYTECODE(LITMINUS, "lit-", 0, FLAG_HASARG, { AT(0) -= INTARG(); })
+BYTECODE(LITPLUS, "lit+", 1, FLAG_HASARG, { AT(0) += INTARG(); })
+BYTECODE(LITMINUS, "lit-", 1, FLAG_HASARG, { AT(0) -= INTARG(); })
 BYTECODE(DUP, "dup", 1, 0, {
     tmp = TOP();
     PUSH(tmp);    
@@ -163,6 +168,12 @@ BYTECODE(DIVMOD, "/mod", 2, 0, {
 BYTECODE(ADD, "+", 2, 0, { 
     tmp = POP();
     AT(0) += tmp;     
+  })
+BYTECODE(BIADD, "bi+", 3, 0, { 
+    tmp = POP();
+    AT(0) += tmp;     
+    tmp = POP();
+    AT(0) += tmp;
   })
 BYTECODE(SUB, "-", 2, 0, { 
     tmp = POP();

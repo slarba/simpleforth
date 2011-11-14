@@ -201,19 +201,23 @@ variable pattern-list
     2drop 2drop
 ;
 
+defer remove-noops
+
 : scan-and-replace ( codeaddr -- )
+    dup         ( beginaddr codeaddr )
     begin
-	dup @         \ codeaddr instruction
-	' eow <>      \ codeaddr iseow
-    while             \ codeaddr
-	    search-match   \ codeaddr match/0
+	dup @         \ beginaddr codeaddr instruction
+	' eow <>      \ beginaddr codeaddr iseow
+    while             \ beginaddr codeaddr
+	    search-match   \ beginaddr codeaddr match/0
 	    ?dup if
-		2dup replace-pattern drop          \ codeaddr
+		2dup replace-pattern drop          \ beginaddr codeaddr
+		over remove-noops    ( remove noops now to make other patterns fire right away )
 	    else
 		next-instruction
 	    then
     repeat
-    drop
+    2drop
 ;
 
 : copy-instr ( dest src -- dest+cell src+cell )
@@ -235,7 +239,7 @@ variable pattern-list
 	    ' branch of copy-instr endof
 	    ' 0branch of copy-instr endof
 	    ' 1branch of copy-instr endof
-	    ' eow of 2drop drop exit endof
+	    ' eow of copy-instr 2drop drop exit endof
 	endcase
 	copy-instr
     again
@@ -257,24 +261,76 @@ variable pattern-list
     2drop
 ;
 
+variable const-expr-pattern
+
+p{ lit ? lit ? ? }p   const-expr-pattern !
+
+: replace-const-expr ( matchedaddr op -- )
+    swap
+    dup cell+ @        ( op matchedaddr a )
+    over 3 cells + @   ( op matchedaddr a b )
+    3 pick exec-builtin ( op matchedaddr a_op_b )
+    over cell+ !       ( op matchedaddr )
+    2 cells +          ( op firstnoopaddr )
+    dup ' noop swap !  ( op firstnoopaddr )
+    cell+              ( op 2ndnoopaddr )
+    dup ' noop swap !  ( op 2ndnoopaddr )
+    cell+              ( op 3rdnoopaddr )
+    ' noop swap !      ( op )
+    drop
+;
+
+: constant-fold-replace ( codeaddr -- nomatch )
+    dup 4 cells + @ case                 ( codeaddr op )
+	' + of ' + replace-const-expr 0 endof
+	' - of ' - replace-const-expr 0 endof
+	' / of ' / replace-const-expr 0 endof
+	' * of ' * replace-const-expr 0 endof
+	2drop 1 exit
+    endcase
+;
+
+: constant-fold-search ( codeaddr -- )
+    dup         ( wordaddr codeaddr )
+    begin
+	dup @                ( wordaddr codeaddr instr )
+	' eow <>             ( wordaddr codeaddr noteow )
+    while                          ( wordaddr codeaddr )
+	    dup const-expr-pattern @ match if        ( wordaddr codeaddr isamatch? )
+		dup constant-fold-replace if         ( wordaddr codeaddr notreplaced? )
+		    next-instruction     \ not replaced, next instruction
+		else
+		    over remove-noops    \ replaced, remove noops now
+		then
+	    else
+		next-instruction
+	    then
+    repeat
+    2drop
+;
+
 : optimize ( -- )
     latest @ >cfa
-    dup scan-and-replace
-    remove-noops
+    dup constant-fold-search
+    scan-and-replace
 ;
 
 : opt-word immediate ( -- )
     word find >cfa
-    dup scan-and-replace
-    remove-noops
+    dup constant-fold-search
+    scan-and-replace
 ;
 
 patterns
+  p{ lit ? + }p               -> r{ lit+ ? noop }r ,
+  p{ lit ? - }p               -> r{ lit- ? noop }r ,
   p{ lit 1 + }p               -> r{ 1+ noop noop }r  ,
   p{ lit 1 - }p               -> r{ 1- noop noop }r  ,
   p{ lit 1 * }p               -> r{ noop noop noop }r ,
   p{ lit 1 / }p               -> r{ noop noop noop }r ,
   p{ lit 0 + }p               -> r{ noop noop noop }r ,
+  p{ lit 0 1- }p              -> r{ lit -1 noop }r ,
+  p{ lit 0 1+ }p              -> r{ lit 1 noop }r ,
   p{ lit 0 - }p               -> r{ noop noop noop }r ,
   p{ lit -1 + }p              -> r{ 1- noop noop }r ,
   p{ lit -1 - }p              -> r{ 1+ noop noop }r ,
@@ -282,11 +338,9 @@ patterns
   p{ swap swap }p             -> r{ noop noop }r   ,
   p{ dup swap }p              -> r{ dup noop }r    ,
   p{ drop drop }p             -> r{ 2drop noop }r  ,
-  p{ lit ? + }p               -> r{ lit+ ? noop }r ,
-  p{ lit ? - }p               -> r{ lit- ? noop }r ,
   p{ lit ? @ }p               -> r{ var@ ? noop }r  ,
   p{ lit ? ! }p               -> r{ var! ? noop }r  ,
-  p{ swap drop swap drop }p   -> r{ 2nip noop }r ,
+  p{ swap drop swap drop }p   -> r{ 2nip noop noop noop }r ,
   p{ swap drop }p             -> r{ nip noop }r ,
   p{ nip nip nip }p           -> r{ 2nip nip noop }r ,
   p{ nip nip }p               -> r{ 2nip noop }r ,
@@ -302,7 +356,8 @@ patterns
   p{ rot -rot }p              -> r{ noop noop }r ,
   p{ -rot rot }p              -> r{ noop noop }r ,
   p{ dup drop }p              -> r{ noop noop }r ,
-  p{ over drop }p             -> r{ noop noop }r
+  p{ over drop }p             -> r{ noop noop }r ,
+  p{ + + }p                   -> r{ bi+ noop }r
 end-patterns
 
 s" ;" create immediate
