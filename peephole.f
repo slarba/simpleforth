@@ -262,8 +262,12 @@ defer remove-noops
 ;
 
 variable const-expr-pattern
+variable const-expr-pattern2
+variable const-expr-pattern3
 
 p{ lit ? lit ? ? }p   const-expr-pattern !
+p{ lit+ ? lit+ ? }p   const-expr-pattern2 !
+p{ lit- ? lit- ? }p   const-expr-pattern3 !
 
 : replace-const-expr ( matchedaddr op -- )
     swap
@@ -278,6 +282,17 @@ p{ lit ? lit ? ? }p   const-expr-pattern !
     cell+              ( op 3rdnoopaddr )
     ' noop swap !      ( op )
     drop
+;
+
+: replace-const-expr2 ( matchedaddr -- )
+    dup cell+ @       ( matchedaddr a )
+    over 3 cells + @  ( matchedaddr a b )
+    +
+    over cell+ !      ( matchedaddr )
+    2 cells +
+    dup ' noop swap !
+    cell+
+    ' noop swap !
 ;
 
 : constant-fold-replace ( codeaddr -- nomatch )
@@ -303,7 +318,17 @@ p{ lit ? lit ? ? }p   const-expr-pattern !
 		    over remove-noops    \ replaced, remove noops now
 		then
 	    else
-		next-instruction
+		dup const-expr-pattern2 @ match if
+		    dup replace-const-expr2
+		    over remove-noops
+		else
+		    dup const-expr-pattern3 @ match if
+			dup replace-const-expr2
+			over remove-noops
+		    else
+			next-instruction
+		    then
+		then
 	    then
     repeat
     2drop
@@ -312,13 +337,15 @@ p{ lit ? lit ? ? }p   const-expr-pattern !
 : optimize ( -- )
     latest @ >cfa
     dup constant-fold-search
-    scan-and-replace
+    dup scan-and-replace
+    constant-fold-search
 ;
 
 : opt-word immediate ( -- )
     word find >cfa
     dup constant-fold-search
-    scan-and-replace
+    dup scan-and-replace
+    constant-fold-search
 ;
 
 patterns

@@ -138,7 +138,7 @@ consthere @ create immediate
 ;
 
 : '\n' inline 10 ;
-: cr inline '\n' emit ;
+: cr inline 10 emit ;
 : literal immediate ' lit , , ;
 : char word c@ ;
 : ':' inline [ char : ] literal ;
