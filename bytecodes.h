@@ -312,7 +312,7 @@ BYTECODE(TOCFA, ">cfa", 1, 0, {
     dict_hdr_t *ptr = (dict_hdr_t*)POP();
     PUSH((ptr+1));    
   })
-BYTECODE(TELL, "tell", 1, 0, { fprintf(stdout, (char*)POP()); })
+BYTECODE(TELL, "tell", 1, 0, { fprintf(stdout, "%s", (char*)POP()); })
 BYTECODE(MALLOC, "malloc", 1, 0, {
     tmp = POP();
     PUSH(MALLOC(tmp));    
