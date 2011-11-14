@@ -295,7 +295,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 }
 
 static char constbuf[102400];
-static char testbuf[102400];
+static char testbuf[1024000];
 static cell datastack[1024];
 static void **returnstack[512];
 

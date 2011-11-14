@@ -702,6 +702,30 @@ hide perform-inline
     ] 
 ;
 
+variable datahere
+4096 cells allot datahere !
+
+: :lambda immediate
+    state @ if     \ if compiling
+	' lit ,
+	datahere @ ,
+	here @     \ save old here ptr
+	datahere @ here !    \ save new here for compilation
+    else
+	." :lambda can only be used in compile mode" cr
+    then
+;
+
+: ;; immediate
+    state @ if
+	' exit , ' eow ,
+	here @ datahere !   \ advance consthere
+	here !    \ restore old here pointer
+    else
+	." ;; can be only used in compile mode" cr
+    then
+;
+
 : ['] immediate
     ' lit ,
 ;

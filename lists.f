@@ -158,10 +158,13 @@ endclass
     builder-finish send
 ;
 
-: lisaayksi 1+ ;
-
 : listsum ( list -- )
-    l{ 1 ,, 2 ,, 3 ,, 4 } ' lisaayksi map print send
+    l{ 1 ,, 2 ,, 3 ,, 4 }
+    :lambda
+      dup 3 = if
+	1+
+      then
+    ;; map print send
 ;
 
 : pituus count send . cr ;
