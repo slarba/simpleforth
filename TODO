@@ -1,0 +1,20 @@
+
+* constant folding  - OK
+  lit x
+  lit y
+  op      \ where op is + - / *
+  -> lit (x y op)
+
+* :noname to work in compiled mode
+  - compiles to constant pool and emits lit <executiontoken>
+  - in immediate mode, should work like before
+
+* refactor duplicated code that checks for bytecodes that have args
+  - to single function
+
+* debugger  - OK, rudimentary implementation done
+  - breakpoint word
+  - drops into a debug interpreter, exit with a word that resumes execution
+  - disassemble next instructions to be executed etc
+
+* unsigned comparisons
