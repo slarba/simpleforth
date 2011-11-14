@@ -1,3 +1,3 @@
 #!/bin/sh
 LD_LIBRARY_PATH=./gc/boehmgc/lib
-cat forth.f - | ./forth
+cat forth.f - | ./forth $*

@@ -850,10 +850,18 @@ include classes.f
     loop
 ;
 
-' looptest disasm
+\ ' looptest disasm
+
+: bytes-used
+      here @ here0 - ;
+
+: const-bytes-used
+      consthere @ consthere0 - ;
 
 : welcome
-    ." MLT Forth version " version . cr
+    ." MLT Forth version " version . cr 
+    ." Bytes used: " bytes-used . cr
+    ." Const used: " const-bytes-used . cr
     ." Welcome!" cr
 ;
 

@@ -10,8 +10,6 @@
 #include <string.h>
 #include <limits.h>
 
-#define USE_GC 1
-
 #ifdef USE_GC
  #include <gc.h>
  #define MALLOC(x) GC_MALLOC(x)
@@ -24,9 +22,6 @@
  #define RUNGC()
  #define FREE(x) free(x)
 #endif
-
-/* configuration */
-#define SAFE_INTERPRETER 1
 
 #define FORTH_VERSION 1
 
@@ -304,7 +299,7 @@ static char testbuf[102400];
 static cell datastack[1024];
 static void **returnstack[512];
 
-int main() {
+int main(int argc, char **argv) {
   char linebuf[1024];
   reader_state_t inputstate;
 
@@ -318,6 +313,11 @@ int main() {
 
   setvbuf(stdin, NULL, _IONBF, 0);   // disable input buffering, we have our own
   init_reader_state(&inputstate, linebuf, 1024, stdin);
+
+  create_constant("argc", (cell)argc);
+  create_constant("argv", (cell)argv);
+  create_constant("here0", (cell)testbuf);
+  create_constant("consthere0", (cell)constbuf);
 
   void **initprog = cfa(find_word("quit"));
   interpret(initprog, datastack+1024, returnstack+512, &inputstate, stdout);
