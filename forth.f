@@ -1,18 +1,17 @@
-58 consthere @ c!
-0  consthere @ 1+ c!
-consthere @ create
-' word ,
-' create ,
-' latest ,
-' @ ,
-' hidden ,
-' ] ,
-' exit ,
-' eow ,
+58 here @ c!
+0  here @ 1+ c!
+here @ dup cellsize + here !
+create ]
+word create
+latest @ hidden
+]
+exit
+eow 
+[
 
-59 consthere @ c!
-0  consthere @ 1+ c!
-consthere @ create immediate
+59 here @ c!
+0  here @ 1+ c!
+here @ dup cellsize + here ! create immediate
 ' lit ,
 ' exit ,
 ' , ,
@@ -34,9 +33,6 @@ consthere @ create immediate
 
 : inline immediate make-inline ;
 
-: cell inline cellsize ;
-: cells inline cellsize * ;
-
 : allot here @ swap here +! ;
 
 : variable
@@ -47,6 +43,20 @@ consthere @ create immediate
     ' exit ,
     ' eow ,
 ;
+
+variable consthere
+variable consthere0
+
+4096 cellsize * allot
+dup consthere !
+consthere0 !
+
+variable datahere
+4096 cellsize * allot
+datahere !
+
+: cell inline cellsize ;
+: cells inline cellsize * ;
 
 : if immediate
     ' 0branch ,
@@ -705,9 +715,6 @@ hide perform-inline
     here @
     ] 
 ;
-
-variable datahere
-4096 cells allot datahere !
 
 : :lambda immediate
     state @ if     \ if compiling

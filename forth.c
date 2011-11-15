@@ -62,7 +62,6 @@ typedef struct builtin_word_t {
 } builtin_word_t;
 
 /* free memory pointers and latest defined word */
-static void       *const_here;        /* constant pool  */
 static void       *here;              /* working memory */
 static dict_hdr_t *latest = NULL;
 
@@ -266,7 +265,6 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("cellsize", (cell)sizeof(cell));
     create_constant("base", (cell) &base);
     create_constant("here", (cell) &here);
-    create_constant("consthere", (cell) &const_here);
     create_constant("hdrsize", (cell) sizeof(dict_hdr_t));
     create_constant("<stdin>", (cell) &inputstate);
 
@@ -290,34 +288,30 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 #define BYTECODE(label, name, nargs, flags, code) l_##label: CHECKSTACK(name, nargs) code NEXT();
 #include "bytecodes.h"
 #undef BYTECODE
-
-  return;
 }
 
-static char constbuf[102400];
-static char testbuf[1024000];
-static cell datastack[1024];
-static void **returnstack[512];
+void init_interpreter(int argc, char **argv, unsigned int howmuchmemory) {
+  void *mem = MALLOC(howmuchmemory);
+  here = mem;
+  interpret(NULL, NULL, NULL, NULL, NULL);
+  create_constant("argc", (cell)argc);
+  create_constant("argv", (cell)argv);
+  create_constant("here0", (cell)mem);
+}
 
 int main(int argc, char **argv) {
   char linebuf[1024];
   reader_state_t inputstate;
+  cell datastack[1024];
+  void **returnstack[512];
 
 #ifdef USE_GC
   GC_INIT();
 #endif
 
-  here = testbuf;
-  const_here = constbuf;
-  interpret(NULL, NULL, NULL, NULL, NULL);
-
-  setvbuf(stdin, NULL, _IONBF, 0);   // disable input buffering, we have our own
+  init_interpreter(argc, argv, 5*1024*1024);
+  setvbuf(stdin, NULL, _IONBF, 0);  // disable input buffering, we have our own
   init_reader_state(&inputstate, linebuf, 1024, stdin);
-
-  create_constant("argc", (cell)argc);
-  create_constant("argv", (cell)argv);
-  create_constant("here0", (cell)testbuf);
-  create_constant("consthere0", (cell)constbuf);
 
   void **initprog = cfa(find_word("quit"));
   interpret(initprog, datastack+1024, returnstack+512, &inputstate, stdout);
