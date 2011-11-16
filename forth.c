@@ -4,11 +4,14 @@
  * --------------------------------------------------
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <limits.h>
+#include <sys/mman.h>
 
 #include <readline/readline.h>
 
@@ -65,6 +68,8 @@ typedef struct builtin_word_t {
 
 /* free memory pointers and latest defined word */
 static void       *here;              /* working memory */
+static void       *here0;             /* beginning of working memory */
+static cell       here_size;          /* size of allocated pool */
 static dict_hdr_t *latest = NULL;
 
 /* utility functions */
@@ -80,6 +85,35 @@ static dict_hdr_t *find_word(const char *name) {
   return NULL;
 }
 
+/*
+static int alloc_here_area(unsigned int size) {
+  here0 = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  if(here0==MAP_FAILED) return 0;
+  here = here0;
+  here_size = size;
+  return 1;
+}
+
+static int resize_area(unsigned int amount) {
+  here0 = mremap(here0, here_size, here_size+amount, 0);
+  if(here0==MAP_FAILED) return 0;
+  here_size += amount;
+  return 1;
+}
+*/
+
+static void check_here() {
+  /*
+  if(here>=(here0+here_size)) {
+    puts("resize");
+    if(!resize_area(10*1024)) {
+      fprintf(stderr, "cannot resize here area!\n");
+      exit(1);
+    }
+  }
+  */
+}
+
 static void **cfa(dict_hdr_t *word) {
   return (void**)(word+1);
 }
@@ -87,6 +121,7 @@ static void **cfa(dict_hdr_t *word) {
 static void comma(cell value) {
   *(cell*)here = value;
   here += sizeof(cell);
+  check_here();
 }
 
 static dict_hdr_t *create_word(const char *name, cell flags) {
@@ -96,6 +131,7 @@ static dict_hdr_t *create_word(const char *name, cell flags) {
 
   dict_hdr_t *new = (dict_hdr_t*)here;
   here += sizeof(dict_hdr_t);
+  check_here();
   strncpy(new->name, name, MAX_WORD_NAME_LEN);
   new->flags = flags;
   new->next = latest;
@@ -124,6 +160,8 @@ static reader_state_t *open_file(const char *filename, const char *mode) {
   char *lbuf = MALLOC(1024);
   if(!lbuf) goto err_exit;
 
+  setvbuf(fp, NULL, _IONBF, 0);  // disable input buffering, we have our own
+
   reader_state_t *state = (reader_state_t*)MALLOC(sizeof(reader_state_t));
   if(!state) goto err_exit;
   init_reader_state(state, lbuf, 1024, fp);
@@ -146,12 +184,12 @@ static void skip_whitespaces(reader_state_t *state) {
 }
 
 static cell is_eol(reader_state_t *state) {
-  if(*state->next_char) skip_whitespaces(state);
+  skip_whitespaces(state);
   return *state->next_char==0;
 }
 
 static cell is_eof(reader_state_t *fp) {
-  return *fp->next_char=='\0' && (fp->stream==NULL || feof(fp->stream));
+  return *fp->next_char=='\0' && feof(fp->stream);
 }
 
 static char *read_next_line(reader_state_t *state) {
@@ -164,7 +202,6 @@ static char *read_next_line(reader_state_t *state) {
 static char *prompt_line(const char *prompt, reader_state_t *state) {
   char *tmp = readline(prompt);
   if(!tmp) {
-    state->stream = NULL;
     return NULL;
   }
   strncpy(state->linebuf, tmp, state->linebuf_size);
@@ -253,13 +290,24 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
   cell state = STATE_IMMEDIATE;
   cell base = 10;
   cell *s0 = ds;
+  cell *t0 = NULL;
+  cell *ts = NULL;
   void ***r0 = rs;
+
   char wordbuf[MAX_WORD_NAME_LEN];
+  char linebuf[MAX_WORD_NAME_LEN];
+
   void **nestingstack_space[NESTINGSTACK_MAX_DEPTH];
   void ***nestingstack = nestingstack_space + NESTINGSTACK_MAX_DEPTH;
-  char linebuf[MAX_WORD_NAME_LEN];
+
   void *builtin_immediatebuf[2] = { NULL, WORD(IRETURN) };
   void *word_immediatebuf[3]    = { WORD(CALL), NULL, WORD(IRETURN) };
+
+  char stdinbuf[1024];
+  reader_state_t stdin_state;
+  
+  setvbuf(stdin, NULL, _IONBF, 0);  // disable input buffering, we have our own
+  init_reader_state(&stdin_state, stdinbuf, 1024, stdin);
 
   /* trick: include bytecodes.h with a macro for BYTECODE that produces builtin
    * list elements */
@@ -274,7 +322,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
   if(!ip) {
     builtin_word_t *b = builtins;
     while(b->name) create_builtin(b++);
-
+    
     /* some constants */
     create_constant("version", FORTH_VERSION);
     create_constant("f_builtin", FLAG_BUILTIN);
@@ -284,12 +332,16 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("f_deferred", FLAG_DEFERRED);
     create_constant("s0", (cell) &s0);
     create_constant("r0", (cell) &r0);
+    create_constant("t0", (cell) &t0);
     create_constant("state", (cell) &state);
     create_constant("cellsize", (cell)sizeof(cell));
     create_constant("base", (cell) &base);
     create_constant("here", (cell) &here);
     create_constant("hdrsize", (cell) sizeof(dict_hdr_t));
-    create_constant("<stdin>", (cell) &inputstate);
+    create_constant("<stdin>", (cell) &stdin_state);
+    create_constant("<stdout>", (cell) stdout);
+    create_constant("input-stream", (cell) &inputstate);
+    create_constant("output-stream", (cell) &outp);
 
     // QUIT is the topmost interpreter loop: interpret forever. better version implemented in
     // forth later that supports eof etc
@@ -314,17 +366,21 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 }
 
 void init_interpreter(int argc, char **argv, unsigned int howmuchmemory) {
-  void *mem = MALLOC(howmuchmemory);
-  here = mem;
+  /* if(!alloc_here_area(howmuchmemory)) {
+    fprintf(stderr, "cannot allocate here area of size %d\n", howmuchmemory);
+    exit(1);
+  }
+  */
+  here0 = MALLOC(howmuchmemory);
+  here = here0;
+  here_size = howmuchmemory;
   interpret(NULL, NULL, NULL, NULL, NULL);
   create_constant("argc", (cell)argc);
   create_constant("argv", (cell)argv);
-  create_constant("here0", (cell)mem);
+  create_constant("here0", (cell)here0);
 }
 
 int main(int argc, char **argv) {
-  char linebuf[1024];
-  reader_state_t inputstate;
   cell datastack[1024];
   void **returnstack[512];
 
@@ -332,19 +388,17 @@ int main(int argc, char **argv) {
   GC_INIT();
 #endif
 
-  init_interpreter(argc, argv, 5*1024*1024);
+  init_interpreter(argc, argv, 10*1024*1024);
 
-  FILE *fp = fopen("forth.f", "r");
+  reader_state_t *fp = open_file("forth.f", "r");
   if(!fp) {
     fprintf(stderr, "Cannot open bootstrap file forth.f!\n");
     return 1;
   }
-  setvbuf(fp, NULL, _IONBF, 0);  // disable input buffering, we have our own
-  init_reader_state(&inputstate, linebuf, 1024, fp);
 
   void **initprog = cfa(find_word("quit"));
-  interpret(initprog, datastack+1024, returnstack+512, &inputstate, stdout);
+  interpret(initprog, datastack+1024, returnstack+512, fp, stdout);
 
-  fclose(fp);
+  close_file(fp);
   return 0;
 }

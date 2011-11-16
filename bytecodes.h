@@ -274,6 +274,7 @@ BYTECODE(COMMA, ",", 1, 0, {
     tmp = POP();
     *(cell*)here = tmp;
     here += sizeof(cell);    
+    check_here();
   })
 BYTECODE(STORE, "!", 2, 0, {
     cell *ptr = (cell*)POP();
@@ -424,3 +425,8 @@ BYTECODE(PROMPT, "prompt", 2, 0, {
     char *prompt = (char*)POP();
     prompt_line(prompt, state);
   })
+BYTECODE(GETT0, "tsp@", 0, 0, { PUSH(ts); })
+BYTECODE(SETT0, "tsp!", 1, 0, { ts = (cell*)POP(); })
+BYTECODE(TOTMP, ">t", 1, 0, { *--ts = POP(); })
+BYTECODE(FROMTMP, "t>", 0, 0, { PUSH(*ts++); })
+BYTECODE(CHECKHERE, "checkhere", 0, 0, { check_here(); })

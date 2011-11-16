@@ -52,8 +52,14 @@ dup consthere !
 consthere0 !
 
 variable datahere
+variable datahere0
 4096 cellsize * allot
-datahere !
+dup datahere !
+datahere0 !
+
+1024 cellsize * allot
+dup t0 !
+tsp!
 
 : cell inline cellsize ;
 : cells inline cellsize * ;
@@ -589,7 +595,7 @@ hide find-vocabulary
 \	." use print-stack-trace to view what happened" cr
 \    then
     begin
-	<stdin> @ ?eof not
+	input-stream @ ?eof not
     while
 	interpret
     repeat
@@ -777,15 +783,15 @@ variable input-stack
     word
     for-reading open-file            ( fp )
     ?dup if                           ( fp )
-	<stdin> @ push-input-stack   \ save old stdin
-	<stdin> !                    \ store fp as new stdin
+	input-stream @ push-input-stack   \ save old stdin
+	input-stream !                    \ store fp as new stdin
 	begin
-	    <stdin> @ ?eof not       \ as long as there is something to interpret
+	    input-stream @ ?eof not       \ as long as there is something to interpret
 	while
 		interpret            \ ... interpret!
 	repeat
-	<stdin> @ close-file         \ close the file
-	pop-input-stack <stdin> !    \ and restore old stdin
+	input-stream @ close-file         \ close the file
+	pop-input-stack input-stream !    \ and restore old stdin
     else
 	." no such file" cr
     then
@@ -898,16 +904,22 @@ include classes.f
     ." Welcome!" cr
 ;
 
+: interpret-until-eol
+;
+
 : quit
+    <stdin> input-stream !
     begin
-	." [" depth cell / . current-vocab @ vocab-name tell s" ]> " <stdin> @ prompt
-	<stdin> @ ?eof not
+	." [" depth cell / . current-vocab @ vocab-name tell
+	s" ]> " input-stream @ prompt
+	input-stream @ ?eof not
     while
 	    begin
-		<stdin> @ ?eol not
+		input-stream @ ?eol not
 	    while
 		    interpret
 	    repeat
+	    cr
     repeat
     die
 ;
