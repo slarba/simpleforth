@@ -1,20 +1,49 @@
 
-* constant folding  - OK
+* unit test framework!!
+
+* a complete set of unit tests to test the interpreter features!
+
+* string concatenation
+
+* string formatting
+
+* file-io (read and write operations)
+
+* constant folding  - SEMI-OK, more runs to chain longer constant exprs, logical exprs
   lit x
   lit y
   op      \ where op is + - / *
   -> lit (x y op)
 
-* :noname to work in compiled mode
+* peephole patterns
+  - logical operations (double invert etc, or's with zeros)
+
+* :noname to work in compiled mode  - OK, :lambda ;; implemented
   - compiles to constant pool and emits lit <executiontoken>
   - in immediate mode, should work like before
+
+* temporary stack  - OK, implemented >t, t>, tsp! and tsp@
 
 * refactor duplicated code that checks for bytecodes that have args
   - to single function
 
-* debugger  - OK, rudimentary implementation done
+* debugger  - OK, rudimentary but useful implementation done
   - breakpoint word
   - drops into a debug interpreter, exit with a word that resumes execution
   - disassemble next instructions to be executed etc
 
 * unsigned comparisons
+  - print-stack-trace crashes on 32bit systems due to this
+
+* in-place resizable "here area"   - NOK, trouble with mremap
+
+* floating point support
+  - stack, operations
+
+* oop system to use temp stack for self pointers
+
+* locals implementation
+
+* autocompletion using realine to search vocabulary
+
+* general refactoring of code

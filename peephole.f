@@ -100,8 +100,10 @@ variable pattern-list
     save-code
 ;
 
-: endpatternmarker inline hex 1badedda decimal ;
-: wildcardmarker inline hex 2dabafab decimal ;
+hex
+1badedda constant endpatternmarker
+2dabafab constant wildcardmarker
+decimal
 
 : ?endofpattern endpatternmarker = ;
 : save-wildcard wildcardmarker save-code ;
