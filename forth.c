@@ -10,6 +10,8 @@
 #include <string.h>
 #include <limits.h>
 
+#include <readline/readline.h>
+
 #ifdef USE_GC
  #include <gc.h>
  #define MALLOC(x) GC_MALLOC(x)
@@ -139,8 +141,17 @@ static void close_file(reader_state_t *fp) {
   FREE(fp);
 }
 
+static void skip_whitespaces(reader_state_t *state) {
+  while(isspace(*state->next_char)) state->next_char++;
+}
+
+static cell is_eol(reader_state_t *state) {
+  if(*state->next_char) skip_whitespaces(state);
+  return *state->next_char==0;
+}
+
 static cell is_eof(reader_state_t *fp) {
-  return *fp->next_char=='\0' && feof(fp->stream);
+  return *fp->next_char=='\0' && (fp->stream==NULL || feof(fp->stream));
 }
 
 static char *read_next_line(reader_state_t *state) {
@@ -148,6 +159,18 @@ static char *read_next_line(reader_state_t *state) {
   if(!tmp) return NULL;
   state->next_char = tmp;
   return tmp;
+}
+
+static char *prompt_line(const char *prompt, reader_state_t *state) {
+  char *tmp = readline(prompt);
+  if(!tmp) {
+    state->stream = NULL;
+    return NULL;
+  }
+  strncpy(state->linebuf, tmp, state->linebuf_size);
+  free(tmp);
+  state->next_char = state->linebuf;
+  return state->next_char;
 }
 
 static int read_key(reader_state_t *state) {
@@ -162,7 +185,7 @@ static char *read_word(reader_state_t *state, char *tobuf) {
 
   // skip whitespaces first
  skipws:
-  while(isspace(*state->next_char)) state->next_char++;
+  skip_whitespaces(state);
 
   // buffer exhausted? fill and reskip whitespaces
   if(*state->next_char == '\0') {
@@ -310,10 +333,18 @@ int main(int argc, char **argv) {
 #endif
 
   init_interpreter(argc, argv, 5*1024*1024);
-  setvbuf(stdin, NULL, _IONBF, 0);  // disable input buffering, we have our own
-  init_reader_state(&inputstate, linebuf, 1024, stdin);
+
+  FILE *fp = fopen("forth.f", "r");
+  if(!fp) {
+    fprintf(stderr, "Cannot open bootstrap file forth.f!\n");
+    return 1;
+  }
+  setvbuf(fp, NULL, _IONBF, 0);  // disable input buffering, we have our own
+  init_reader_state(&inputstate, linebuf, 1024, fp);
 
   void **initprog = cfa(find_word("quit"));
   interpret(initprog, datastack+1024, returnstack+512, &inputstate, stdout);
+
+  fclose(fp);
   return 0;
 }

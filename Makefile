@@ -4,7 +4,7 @@ CC = gcc-4.3
 # PROF=-ftest-coverage -fprofile-arcs
 PROF=
 CFLAGS = -Wall $(CONFFLAGS) -O4 -I./gc/boehmgc/include $(PROF)
-LDFLAGS = -L./gc/boehmgc/lib $(PROF) -lgc
+LDFLAGS = -L./gc/boehmgc/lib $(PROF) -lgc -lreadline
 
 all: forth.S forth forth
 

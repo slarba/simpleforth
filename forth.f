@@ -509,9 +509,9 @@ definitions
 
 : hide word find hidden ;
 
-hide current-vocab
+\ hide current-vocab
 hide latest-defined-vocab
-hide vocab-name
+\ hide vocab-name
 hide vocab-next
 hide vocab-latest
 hide set-vocab-name
@@ -580,20 +580,20 @@ hide find-vocabulary
     then
 ;
 
-variable quit-level
-0 quit-level !
+\ variable quit-level
+\ 0 quit-level !
 
 : quit
-    1 quit-level +!
-    quit-level @ 2 > if
-	." use print-stack-trace to view what happened" cr
-    then
+\    1 quit-level +!
+\    quit-level @ 2 > if
+\	." use print-stack-trace to view what happened" cr
+\    then
     begin
 	<stdin> @ ?eof not
     while
 	interpret
     repeat
-    die
+\    die
 ;
 
 quit
@@ -896,6 +896,20 @@ include classes.f
     ." Bytes used: " bytes-used . cr
     ." Const used: " const-bytes-used . cr
     ." Welcome!" cr
+;
+
+: quit
+    begin
+	." [" depth cell / . current-vocab @ vocab-name tell s" ]> " <stdin> @ prompt
+	<stdin> @ ?eof not
+    while
+	    begin
+		<stdin> @ ?eol not
+	    while
+		    interpret
+	    repeat
+    repeat
+    die
 ;
 
 welcome

@@ -415,3 +415,12 @@ BYTECODE(ISEOF, "?eof", 1, 0, {
     reader_state_t *state = (reader_state_t*)POP();
     PUSH(is_eof(state));
   })
+BYTECODE(ISEOL, "?eol", 1, 0, {
+    reader_state_t *state = (reader_state_t*)POP();
+    PUSH(is_eol(state));
+  })
+BYTECODE(PROMPT, "prompt", 2, 0, {
+    reader_state_t *state = (reader_state_t*)POP();
+    char *prompt = (char*)POP();
+    prompt_line(prompt, state);
+  })
