@@ -363,6 +363,7 @@ patterns
   p{ lit 0 - }p               -> r{ noop noop noop }r ,
   p{ lit -1 + }p              -> r{ 1- noop noop }r ,
   p{ lit -1 - }p              -> r{ 1+ noop noop }r ,
+  p{ swap dup }p              -> r{ swapdup noop }r ,
   p{ swap over }p             -> r{ tuck noop }r   ,
   p{ swap swap }p             -> r{ noop noop }r   ,
   p{ dup swap }p              -> r{ dup noop }r    ,

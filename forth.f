@@ -882,15 +882,6 @@ include disasm.f
 include debugger.f
 include classes.f
 
-: looptest
-    10 0
-    do
-        ." laskuri=" i . cr
-    loop
-;
-
-\ ' looptest disasm
-
 : bytes-used
       here @ here0 - ;
 
@@ -902,9 +893,6 @@ include classes.f
     ." Bytes used: " bytes-used . cr
     ." Const used: " const-bytes-used . cr
     ." Welcome!" cr
-;
-
-: interpret-until-eol
 ;
 
 : quit

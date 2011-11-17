@@ -55,18 +55,23 @@ definitions
 	'' 2nip  of ." 2nip" endof
 	'' ?dup  of ." ?dup" endof
 	'' swap  of ." swap" endof
+	'' swapdup  of ." swapdup" endof
 	'' drop  of ." drop" endof
 	'' 2drop  of ." 2drop" endof
 	'' /mod of ." /mod" endof
 	'' 2>r of ." 2>r" endof
 	'' 2r> of ." 2r>" endof
 	'' >r  of ." >r" endof
-	'' r>  of ." r>" endof
+	'' r>  of ." t>" endof
+	'' >t  of ." >t" endof
+	'' t>  of ." r>" endof
 	'' tuck of ." tuck" endof
 	'' rdrop of ." rdrop" endof
 	'' 2rdrop of ." 2rdrop" endof
 	'' rsp@  of ." rsp@" endof
 	'' rsp!  of ." rsp!" endof
+	'' tsp@  of ." tsp@" endof
+	'' tsp!  of ." tsp!" endof
 	'' over  of ." over" endof
 	'' rot  of ." rot" endof
 	'' -rot  of ." -rot" endof
@@ -128,12 +133,14 @@ definitions
 	'' open-file of ." open-file" endof
 	'' close-file of ." close-file" endof
 	'' ?eof of ." ?eof" endof
+	'' ?eol of ." ?eol" endof
 	'' ccopy of ." ccopy" endof
 	'' cmove of ." cmove" endof
 	'' c@c! of ." c@c!" endof
 	'' strcpy of ." strcpy" endof
 	'' strlen of ." strlen" endof
 	'' strcmp of ." strcmp" endof
+	'' prompt of ." prompt" endof
 	." ???unknown???"
     endcase
 ;

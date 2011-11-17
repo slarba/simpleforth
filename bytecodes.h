@@ -130,6 +130,12 @@ BYTECODE(SWAP, "swap", 2, 0, {
     AT(1) = AT(0);
     AT(0) = tmp;    
   })
+BYTECODE(SWAPDUP, "swapdup", 2, 0, {
+    tmp = AT(1);
+    AT(1) = AT(0);
+    AT(0) = tmp;
+    PUSH(tmp);
+  })
 BYTECODE(OVER, "over", 2, 0, {
     tmp = AT(1);
     PUSH(tmp);    
@@ -215,15 +221,15 @@ BYTECODE(XOR, "xor", 2, 0, {
     AT(0) ^= tmp;     
   })
 BYTECODE(IMMEDIATE, "immediate", 0, FLAG_IMMED, { latest->flags ^= FLAG_IMMED; })
-BYTECODE(LT, "<", 2, 0, {
-    tmp = POP();
-    AT(0) = AT(0) < tmp;     
-  })
 BYTECODE(GTZ, "0>", 1, 0, {
     AT(0) = AT(0) > 0;    
   })
 BYTECODE(LTZ, "0<", 1, 0, {
     AT(0) = AT(0) < 0;    
+  })
+BYTECODE(LT, "<", 2, 0, {
+    tmp = POP();
+    AT(0) = AT(0) < tmp;     
   })
 BYTECODE(GT, ">", 2, 0, {
     tmp = POP();
@@ -236,6 +242,22 @@ BYTECODE(LE, "<=", 2, 0, {
 BYTECODE(GE, ">=", 2, 0, {
     tmp = POP();
     AT(0) = AT(0) >= tmp;     
+  })
+BYTECODE(ULT, "u<", 2, 0, {
+    tmp = POP();
+    AT(0) = (unsigned)AT(0) < (unsigned)tmp;     
+  })
+BYTECODE(UGT, "u>", 2, 0, {
+    tmp = POP();
+    AT(0) = (unsigned)AT(0) > (unsigned)tmp;     
+  })
+BYTECODE(ULE, "u<=", 2, 0, {
+    tmp = POP();
+    AT(0) = (unsigned)AT(0) <= (unsigned)tmp;     
+  })
+BYTECODE(UGE, "u>=", 2, 0, {
+    tmp = POP();
+    AT(0) = (unsigned)AT(0) >= (unsigned)tmp;     
   })
 BYTECODE(EQ, "=", 2, 0, {
     tmp = POP();
@@ -429,4 +451,3 @@ BYTECODE(GETT0, "tsp@", 0, 0, { PUSH(ts); })
 BYTECODE(SETT0, "tsp!", 1, 0, { ts = (cell*)POP(); })
 BYTECODE(TOTMP, ">t", 1, 0, { *--ts = POP(); })
 BYTECODE(FROMTMP, "t>", 0, 0, { PUSH(*ts++); })
-BYTECODE(CHECKHERE, "checkhere", 0, 0, { check_here(); })
