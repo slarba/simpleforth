@@ -141,6 +141,25 @@ definitions
 	'' strlen of ." strlen" endof
 	'' strcmp of ." strcmp" endof
 	'' prompt of ." prompt" endof
+	'' dcnew of ." dcnew" endof
+	'' dcfree of ." dcfree" endof
+	'' dcreset of ." dcreset" endof
+	'' dcbool of ." dcbool" endof
+	'' dcchar of ." dcchar" endof
+	'' dcshort of ." dcshort" endof
+	'' dcint of ." dcint" endof
+	'' dclong of ." dclong" endof
+	'' dcptr of ." dcptr" endof
+	'' dccallvoid of ." dccallvoid" endof
+	'' dccallbool of ." dccallbool" endof
+	'' dccallchar of ." dccallchar" endof
+	'' dccallshort of ." dccallshort" endof
+	'' dccallint of ." dccallint" endof
+	'' dccalllong of ." dccalllong" endof
+	'' dccallptr of ." dccallptr" endof
+	'' dcloadlib of ." dcloadlib" endof
+	'' dcfreelib of ." dcfreelib" endof
+	'' dcsymbol of ." dcsymbol" endof
 	." ???unknown???"
     endcase
 ;

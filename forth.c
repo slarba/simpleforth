@@ -13,6 +13,8 @@
 #include <limits.h>
 #include <sys/mman.h>
 
+#include <dyncall.h>
+#include <dynload.h>
 #include <readline/readline.h>
 
 #ifdef USE_GC

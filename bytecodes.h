@@ -451,3 +451,86 @@ BYTECODE(GETT0, "tsp@", 0, 0, { PUSH(ts); })
 BYTECODE(SETT0, "tsp!", 1, 0, { ts = (cell*)POP(); })
 BYTECODE(TOTMP, ">t", 1, 0, { *--ts = POP(); })
 BYTECODE(FROMTMP, "t>", 0, 0, { PUSH(*ts++); })
+BYTECODE(NEWCALLVM, "dcnew", 1, 0, {
+    DCCallVM* vm = dcNewCallVM((DCsize)POP());
+    PUSH(vm);
+  })
+BYTECODE(FREECALLVM, "dcfree", 1, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcFree(vm);
+  })
+BYTECODE(RESETCALLVM, "dcreset", 1, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcReset(vm);
+  })
+BYTECODE(DCARGBOOL, "dcbool", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcArgBool(vm, (DCbool)POP());
+  })
+BYTECODE(DCARGCHAR, "dcchar", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcArgChar(vm, (DCchar)POP());
+  })
+BYTECODE(DCARGSHORT, "dcshort", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcArgShort(vm, (DCshort)POP());
+  })
+BYTECODE(DCARGINT, "dcint", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcArgInt(vm, (DCint)POP());
+  })
+BYTECODE(DCARGLONG, "dclong", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcArgLong(vm, (DClong)POP());
+  })
+BYTECODE(DCARGPTR, "dcptr", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    dcArgPointer(vm, (DCpointer)POP());
+  })
+BYTECODE(DCCALLVOID, "dccallvoid", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    DCpointer funcptr = (DCpointer)POP();
+    dcCallVoid(vm, funcptr);
+  })
+BYTECODE(DCCALLBOOL, "dccallbool", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    DCpointer funcptr = (DCpointer)POP();
+    PUSH(dcCallBool(vm, funcptr));
+  })
+BYTECODE(DCCALLCHAR, "dccallchar", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    DCpointer funcptr = (DCpointer)POP();
+    PUSH(dcCallChar(vm, funcptr));
+  })
+BYTECODE(DCCALLSHORT, "dccallshort", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    DCpointer funcptr = (DCpointer)POP();
+    PUSH(dcCallShort(vm, funcptr));
+  })
+BYTECODE(DCCALLINT, "dccallint", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    DCpointer funcptr = (DCpointer)POP();
+    PUSH(dcCallInt(vm, funcptr));
+  })
+BYTECODE(DCCALLLONG, "dccalllong", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    DCpointer funcptr = (DCpointer)POP();
+    PUSH(dcCallLong(vm, funcptr));
+  })
+BYTECODE(DCCALLPTR, "dccallptr", 2, 0, {
+    DCCallVM* vm = (DCCallVM*)POP();
+    DCpointer funcptr = (DCpointer)POP();
+    PUSH(dcCallPointer(vm, funcptr));
+  })
+BYTECODE(DCLOAD, "dcloadlib", 1, 0, {
+    char *libname = (char*)POP();
+    PUSH(dlLoadLibrary(libname));
+  })
+BYTECODE(DCFREE, "dcfreelib", 1, 0, {
+    dlFreeLibrary((void*)POP());
+  })
+BYTECODE(DCSYM, "dcsymbol", 2, 0, {
+    void *lib = (void*)POP();
+    char *symbol = (char*)POP();
+    PUSH(dlFindSymbol(lib, symbol));
+  })
