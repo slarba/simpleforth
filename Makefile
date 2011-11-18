@@ -11,6 +11,8 @@ all: boehmgc dyncall forth.S forth
 
 clean:
 	rm -f forth core gmon.out *.gcov *.gcno *.gcda *.o *.S *~
+
+reallyclean: clean
 	rm -rf dyncall dyncall-0.6
 	rm -rf boehmgc gc-7.1
 
