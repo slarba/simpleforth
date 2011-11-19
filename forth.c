@@ -328,6 +328,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     /* some constants */
     create_constant("version", FORTH_VERSION);
     create_constant("f_builtin", FLAG_BUILTIN);
+    create_constant("f_hasarg", FLAG_HASARG);
     create_constant("f_immediate", FLAG_IMMED);
     create_constant("f_hidden", FLAG_HIDDEN);
     create_constant("f_inline", FLAG_INLINE);

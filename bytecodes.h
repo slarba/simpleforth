@@ -171,6 +171,12 @@ BYTECODE(DIVMOD, "/mod", 2, 0, {
     PUSH( b % a );
     PUSH( b / a );    
   })
+BYTECODE(UDIVMOD, "u/mod", 2, 0, {
+    cell a = POP();
+    cell b = POP();
+    PUSH( (unsigned)b % (unsigned)a );
+    PUSH( (unsigned)b / (unsigned)a );    
+  })
 BYTECODE(ADD, "+", 2, 0, { 
     tmp = POP();
     AT(0) += tmp;     

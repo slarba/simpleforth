@@ -375,11 +375,11 @@ variable latest-defined-vocab
     drop
 ;
 
-: decimal immediate 10 base ! ;
-: hex immediate 16 base ! ;
+: decimal 10 base ! ;
+: hex 16 base ! ;
 
 : u. ( u -- )
-    base @ /mod
+    base @ u/mod
     ?dup if
 	recurse
     then
@@ -671,6 +671,10 @@ hide perform-inline
     ' rdrop , ' rdrop ,
 ;
 
+: unloop immediate
+    ' 2rdrop ,
+;
+
 : i inline ( -- loopvar ) rsp@ cell+ @ ;
 
 : depth
@@ -850,7 +854,7 @@ opt-word include
 	?dup
     while
 	    2dup swap     ( codeaddr latest latest codeaddr )
-	    < if
+	    u< if
 		nip
 		exit
 	    then
@@ -870,6 +874,7 @@ opt-word include
 
 		dup
 		lookup-word-from-ip
+		
 		id. cr
 	    endcase
 	    cell+
@@ -881,6 +886,7 @@ opt-word include
 include disasm.f
 include debugger.f
 include classes.f
+include unittest.f
 
 : bytes-used
       here @ here0 - ;
