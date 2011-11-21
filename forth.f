@@ -726,27 +726,6 @@ hide perform-inline
     ] 
 ;
 
-: :lambda immediate
-    state @ if     \ if compiling
-	' lit ,
-	datahere @ ,
-	here @     \ save old here ptr
-	datahere @ here !    \ save new here for compilation
-    else
-	." :lambda can only be used in compile mode" cr
-    then
-;
-
-: ;; immediate
-    state @ if
-	' exit , ' eow ,
-	here @ datahere !   \ advance consthere
-	here !    \ restore old here pointer
-    else
-	." ;; can be only used in compile mode" cr
-    then
-;
-
 : ['] immediate
     ' lit ,
 ;
@@ -807,6 +786,36 @@ hide pop-input-stack
 
 include peephole.f
 opt-word include
+
+variable compiling-lambda
+0 compiling-lambda !
+
+: :lambda immediate
+    state @ if     \ if compiling
+	' lit ,
+	datahere @ ,
+	here @     \ save old here ptr
+	datahere @ here !    \ save new here for compilation
+    else
+	0 create
+	here @
+	1 compiling-lambda !
+	]
+    then
+;
+
+: ;; immediate
+    state @ if
+	' exit , ' eow ,
+	compiling-lambda @ 0= if
+	    here @ datahere !   \ advance consthere
+	    here !    \ restore old here pointer
+	else
+	    [compile] [
+	then
+	0 compiling-lambda !
+    then
+;
 
 : exception-marker
     rdrop 0
