@@ -831,7 +831,7 @@ variable compiling-lambda
     ?dup if
 	rsp@                         ( n rsp )
 	begin
-	    dup r0 @ cell- <
+	    dup r0 @ cell- u<
 	while
 		dup @
 		' exception-marker = if
@@ -849,7 +849,7 @@ variable compiling-lambda
 
 	drop
 	case
-	    0 1- of ." aborted" cr endof
+	    -1 of ." aborted" cr endof
 	    
 	    ." uncaught throw " dup . cr
 	endcase
