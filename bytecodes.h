@@ -66,6 +66,42 @@ BYTECODE(1BRANCH, "1branch", 0, FLAG_HASARG, {
     tmp = INTARG();
     if(POP()) ip += (tmp/sizeof(void*))-1;
   })
+BYTECODE(LTBRANCH, "<branch", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    cell b = POP();
+    cell a = POP();
+    if(a<b) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(GTBRANCH, ">branch", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    cell b = POP();
+    cell a = POP();
+    if(a>b) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(LTEBRANCH, "<=branch", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    cell b = POP();
+    cell a = POP();
+    if(a<=b) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(GTEBRANCH, ">=branch", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    cell b = POP();
+    cell a = POP();
+    if(a>=b) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(NEQBRANCH, "<>branch", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    cell b = POP();
+    cell a = POP();
+    if(a!=b) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(EQBRANCH, "=branch", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    cell b = POP();
+    cell a = POP();
+    if(a==b) ip += (tmp/sizeof(void*))-1;
+  })
 BYTECODE(FROMR, "r>", 0, 0, {
     tmp = (cell)POPRS();
     PUSH(tmp);    

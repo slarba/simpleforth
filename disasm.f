@@ -17,36 +17,6 @@ definitions
 : print-address ( addr -- )
     ." 0x" hex u. decimal 4 spaces ;
 
-variable firstbuiltin
-
-: find-first-builtin ( -- )
-    latest @
-    begin
-	dup ?builtin not
-    while	    
-	    cell+ @
-    repeat
-    firstbuiltin !
-;
-
-find-first-builtin
-
-: find-bytecode ( bytecode -- dicthdr )
-    firstbuiltin @     ( bytecode dictentry )
-    begin
-	2dup >cfa @ <>   ( bytecode dictentry issame? )
-    while
-	    cell+ @
-    repeat
-    nip
-;
-
-: ?hasarg ( dict-entry -- true/false )
-    @ f_hasarg and ;
-
-: ?iscall ( dict-entry -- true/false )
-    >cfa @ ' call = ;
-
 : disasm-next-instr ( xt -- nextopcodeaddr )
     dup print-address
     next-opcode

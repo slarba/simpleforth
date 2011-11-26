@@ -2,18 +2,9 @@
 
 : next-instruction ( codeaddr -- nextcodeaddr )
     dup @ swap cell+ swap
-    case
-	' lit of cell+ endof
-	' lit+ of cell+ endof
-	' lit- of cell+ endof
-	' call of cell+ endof
-	' jump of cell+ endof
-	' branch of cell+ endof
-	' 0branch of cell+ endof
-	' 1branch of cell+ endof
-	' var@ of cell+ endof
-	' var! of cell+ endof
-    endcase
+    find-bytecode ?hasarg if
+	cell+
+    then
 ;
 
 : ?notendofword ( addr -- addr noteow? )
@@ -25,6 +16,12 @@
 	' branch of 1 endof
 	' 0branch of 1 endof
 	' 1branch of 1 endof
+	' <branch of 1 endof
+	' >branch of 1 endof
+	' <=branch of 1 endof
+	' >=branch of 1 endof
+	' <>branch of 1 endof
+	' =branch of 1 endof
 	0 swap
     endcase
 ;
@@ -241,6 +238,12 @@ defer remove-noops
 	    ' branch of copy-instr endof
 	    ' 0branch of copy-instr endof
 	    ' 1branch of copy-instr endof
+	    ' <branch of copy-instr endof
+	    ' >branch of copy-instr endof
+	    ' <=branch of copy-instr endof
+	    ' >=branch of copy-instr endof
+	    ' <>branch of copy-instr endof
+	    ' =branch of copy-instr endof
 	    ' eow of copy-instr 2drop drop exit endof
 	endcase
 	copy-instr
@@ -355,6 +358,8 @@ patterns
   p{ lit ? - }p               -> r{ lit- ? noop }r ,
   p{ lit 1 + }p               -> r{ 1+ noop noop }r  ,
   p{ lit 1 - }p               -> r{ 1- noop noop }r  ,
+  p{ lit- 1 }p                -> r{ 1- noop }r ,
+  p{ lit+ 1 }p                -> r{ 1+ noop }r ,
   p{ lit 1 * }p               -> r{ noop noop noop }r ,
   p{ lit 1 / }p               -> r{ noop noop noop }r ,
   p{ lit 0 + }p               -> r{ noop noop noop }r ,
@@ -387,7 +392,19 @@ patterns
   p{ -rot rot }p              -> r{ noop noop }r ,
   p{ dup drop }p              -> r{ noop noop }r ,
   p{ over drop }p             -> r{ noop noop }r ,
-  p{ + + }p                   -> r{ bi+ noop }r
+  p{ + + }p                   -> r{ bi+ noop }r ,
+  p{ = 0branch ? }p           -> r{ noop <>branch ? }r ,
+  p{ <> 0branch ? }p          -> r{ noop =branch ? }r ,
+  p{ < 0branch ? }p          -> r{ noop >=branch ? }r ,
+  p{ > 0branch ? }p          -> r{ noop <=branch ? }r ,
+  p{ <= 0branch ? }p          -> r{ noop >branch ? }r ,
+  p{ >= 0branch ? }p          -> r{ noop <branch ? }r ,
+  p{ = 1branch ? }p           -> r{ noop =branch ? }r ,
+  p{ <> 1branch ? }p          -> r{ noop <>branch ? }r ,
+  p{ < 1branch ? }p          -> r{ noop <branch ? }r ,
+  p{ > 1branch ? }p          -> r{ noop >branch ? }r ,
+  p{ <= 1branch ? }p          -> r{ noop <=branch ? }r ,
+  p{ >= 1branch ? }p          -> r{ noop >=branch ? }r
 end-patterns
 
 s" ;" create immediate

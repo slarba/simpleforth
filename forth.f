@@ -526,6 +526,36 @@ hide set-vocab-latest
 hide vocab-useslist
 hide find-vocabulary
 
+variable firstbuiltin
+
+: find-first-builtin ( -- )
+    latest @
+    begin
+	dup ?builtin not
+    while	    
+	    cell+ @
+    repeat
+    firstbuiltin !
+;
+
+find-first-builtin
+
+: find-bytecode ( bytecode -- dicthdr )
+    firstbuiltin @     ( bytecode dictentry )
+    begin
+	2dup >cfa @ <>   ( bytecode dictentry issame? )
+    while
+	    cell+ @
+    repeat
+    nip
+;
+
+: ?hasarg ( dict-entry -- true/false )
+    @ f_hasarg and ;
+
+: ?iscall ( dict-entry -- true/false )
+    >cfa @ ' call = ;
+
 : copytohere ( addr -- addr+cellsize )
     dup @ , cell+
 ;
@@ -534,18 +564,10 @@ hide find-vocabulary
     begin
 	dup @ ' eow <>
     while
-	    dup @ case
-		' lit of copytohere endof
-		' lit+ of copytohere endof
-		' lit- of copytohere endof
-		' call of copytohere endof
-		' jump of copytohere endof
-		' branch of copytohere endof
-		' 0branch of copytohere endof
-		' 1branch of copytohere endof
-		' var@ of copytohere endof
-		' var! of copytohere endof
-	    endcase
+	    dup @
+	    find-bytecode ?hasarg if
+		copytohere
+	    then
 	    copytohere
     repeat
     here @ cell- here !
@@ -653,7 +675,7 @@ quit
 ;
 
 hide copytohere
-hide perform-inline
+\ hide perform-inline
 
 : cell+ inline cellsize + ;
 : cell- inline cellsize - ;
