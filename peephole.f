@@ -235,6 +235,8 @@ defer remove-noops
 	    ' jump of copy-instr endof
 	    ' var@ of copy-instr endof
 	    ' var! of copy-instr endof
+	    ' field@ of copy-instr endof
+	    ' field! of copy-instr endof
 	    ' branch of copy-instr endof
 	    ' 0branch of copy-instr endof
 	    ' 1branch of copy-instr endof
@@ -375,6 +377,10 @@ patterns
   p{ drop drop }p             -> r{ 2drop noop }r  ,
   p{ lit ? @ }p               -> r{ var@ ? noop }r  ,
   p{ lit ? ! }p               -> r{ var! ? noop }r  ,
+  p{ lit ? + @ }p             -> r{ field@ ? noop noop }r ,
+  p{ lit ? + ! }p             -> r{ field! ? noop noop }r ,
+  p{ lit+ ? @ }p              -> r{ field@ ? noop }r ,
+  p{ lit+ ? ! }p              -> r{ field! ? noop }r ,
   p{ swap drop swap drop }p   -> r{ 2nip noop noop noop }r ,
   p{ swap drop }p             -> r{ nip noop }r ,
   p{ nip nip nip }p           -> r{ 2nip nip noop }r ,

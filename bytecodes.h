@@ -58,6 +58,16 @@ BYTECODE(BRANCH, "branch", 0, FLAG_HASARG, {
     tmp = INTARG();
     ip += (tmp/sizeof(void*))-1;    
   })
+BYTECODE(FIELDGET, "field@", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    void *ptr = (void*)POP();
+    PUSH(*((cell*)(ptr+tmp)));
+  })
+BYTECODE(FIELDSET, "field!", 0, FLAG_HASARG, {
+    tmp = INTARG();
+    void *ptr = (void*)POP();
+    *((cell*)(ptr+tmp)) = POP();
+  })
 BYTECODE(0BRANCH, "0branch", 0, FLAG_HASARG, {
     tmp = INTARG();
     if(!POP()) ip += (tmp/sizeof(void*))-1;    
