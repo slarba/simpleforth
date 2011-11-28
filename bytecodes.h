@@ -550,3 +550,21 @@ BYTECODE(DCSYM, "dcsymbol", 2, 0, {
     char *symbol = (char*)POP();
     PUSH(dlFindSymbol(lib, symbol));
   })
+BYTECODE(SAVESTATE, "savestate", 1, 0, {
+    cell *ptr = (cell*)POP();
+    *ptr++ = (cell)ds;
+    *ptr++ = (cell)rs;
+    *ptr++ = (cell)ts;
+    *ptr++ = (cell)s0;
+    *ptr++ = (cell)r0;
+    *ptr++ = (cell)t0;
+  })
+BYTECODE(RESTORESTATE, "restorestate", 1, 0, {
+    cell *ptr = (cell*)POP();
+    ds = (cell*)*ptr++;
+    rs = (void***)*ptr++;
+    ts = (cell*)*ptr++;
+    s0 = (cell*)*ptr++;
+    r0 = (void***)*ptr++;
+    t0 = (cell*)*ptr++;
+  })

@@ -361,7 +361,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
   NEXT();
 
 #if SAFE_INTERPRETER
- #define CHECKSTACK(name, amt) if(((ds-s0)/sizeof(cell))<(amt)) { printf("%s: stack underflow\n", (name)); NEXT(); }
+ #define CHECKSTACK(name, amt) if(( ((cell)s0-(cell)ds) / sizeof(cell) ) < (amt)) { printf("%s: stack underflow\n", (name)); NEXT(); }
 #else
  #define CHECKSTACK(name, amt)
 #endif
