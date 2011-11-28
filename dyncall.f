@@ -19,42 +19,35 @@
     else
 	( library symbolname funptr )
 	nip         ( library funptr )
-	1024 dcnew  ( library funptr callvm ) \ compile callvm
-	dup ' lit , , ' dcreset ,
+	' dcreset ,
     then
 ;
 
 : c-bool
-    dup ' lit , ,
     ' dcbool ,
 ;
 
 : c-char
-    dup ' lit , ,
     ' dcchar ,
 ;
 
 : c-short
-    dup ' lit , ,
     ' dcshort ,
 ;
 
 : c-int
-    dup ' lit , ,
     ' dcint ,
 ;
 
 : c-long
-    dup ' lit , ,
     ' dclong ,
 ;
 
 : c-ptr
-    dup ' lit , ,
     ' dcptr ,
 ;
 
-: returns swap ' lit , , ' lit , , ;
+: returns ' lit , , ;
 : finish ' exit , ' eow , ;
 
 : returns:ptr

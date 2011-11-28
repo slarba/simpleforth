@@ -307,6 +307,8 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 
   char stdinbuf[1024];
   reader_state_t stdin_state;
+
+  DCCallVM* callvm = dcNewCallVM((DCsize)4096);
   
   setvbuf(stdin, NULL, _IONBF, 0);  // disable input buffering, we have our own
   init_reader_state(&stdin_state, stdinbuf, 1024, stdin);

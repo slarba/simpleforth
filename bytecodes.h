@@ -503,76 +503,40 @@ BYTECODE(GETT0, "tsp@", 0, 0, { PUSH(ts); })
 BYTECODE(SETT0, "tsp!", 1, 0, { ts = (cell*)POP(); })
 BYTECODE(TOTMP, ">t", 1, 0, { *--ts = POP(); })
 BYTECODE(FROMTMP, "t>", 0, 0, { PUSH(*ts++); })
-BYTECODE(NEWCALLVM, "dcnew", 1, 0, {
-    DCCallVM* vm = dcNewCallVM((DCsize)POP());
-    PUSH(vm);
-  })
-BYTECODE(FREECALLVM, "dcfree", 1, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcFree(vm);
-  })
-BYTECODE(RESETCALLVM, "dcreset", 1, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcReset(vm);
-  })
-BYTECODE(DCARGBOOL, "dcbool", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcArgBool(vm, (DCbool)POP());
-  })
-BYTECODE(DCARGCHAR, "dcchar", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcArgChar(vm, (DCchar)POP());
-  })
-BYTECODE(DCARGSHORT, "dcshort", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcArgShort(vm, (DCshort)POP());
-  })
-BYTECODE(DCARGINT, "dcint", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcArgInt(vm, (DCint)POP());
-  })
-BYTECODE(DCARGLONG, "dclong", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcArgLong(vm, (DClong)POP());
-  })
-BYTECODE(DCARGPTR, "dcptr", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
-    dcArgPointer(vm, (DCpointer)POP());
-  })
-BYTECODE(DCCALLVOID, "dccallvoid", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
+BYTECODE(RESETCALLVM, "dcreset", 0, 0, { dcReset(callvm); })
+BYTECODE(DCARGBOOL, "dcbool", 1, 0, { dcArgBool(callvm, (DCbool)POP()); })
+BYTECODE(DCARGCHAR, "dcchar", 1, 0, { dcArgChar(callvm, (DCchar)POP()); })
+BYTECODE(DCARGSHORT, "dcshort", 1, 0, { dcArgShort(callvm, (DCshort)POP()); })
+BYTECODE(DCARGINT, "dcint", 1, 0, { dcArgInt(callvm, (DCint)POP()); })
+BYTECODE(DCARGLONG, "dclong", 1, 0, { dcArgLong(callvm, (DClong)POP()); })
+BYTECODE(DCARGPTR, "dcptr", 1, 0, { dcArgPointer(callvm, (DCpointer)POP()); })
+BYTECODE(DCCALLVOID, "dccallvoid", 1, 0, {
     DCpointer funcptr = (DCpointer)POP();
-    dcCallVoid(vm, funcptr);
+    dcCallVoid(callvm, funcptr);
   })
-BYTECODE(DCCALLBOOL, "dccallbool", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
+BYTECODE(DCCALLBOOL, "dccallbool", 1, 0, {
     DCpointer funcptr = (DCpointer)POP();
-    PUSH(dcCallBool(vm, funcptr));
+    PUSH(dcCallBool(callvm, funcptr));
   })
-BYTECODE(DCCALLCHAR, "dccallchar", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
+BYTECODE(DCCALLCHAR, "dccallchar", 1, 0, {
     DCpointer funcptr = (DCpointer)POP();
-    PUSH(dcCallChar(vm, funcptr));
+    PUSH(dcCallChar(callvm, funcptr));
   })
-BYTECODE(DCCALLSHORT, "dccallshort", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
+BYTECODE(DCCALLSHORT, "dccallshort", 1, 0, {
     DCpointer funcptr = (DCpointer)POP();
-    PUSH(dcCallShort(vm, funcptr));
+    PUSH(dcCallShort(callvm, funcptr));
   })
-BYTECODE(DCCALLINT, "dccallint", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
+BYTECODE(DCCALLINT, "dccallint", 1, 0, {
     DCpointer funcptr = (DCpointer)POP();
-    PUSH(dcCallInt(vm, funcptr));
+    PUSH(dcCallInt(callvm, funcptr));
   })
-BYTECODE(DCCALLLONG, "dccalllong", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
+BYTECODE(DCCALLLONG, "dccalllong", 1, 0, {
     DCpointer funcptr = (DCpointer)POP();
-    PUSH(dcCallLong(vm, funcptr));
+    PUSH(dcCallLong(callvm, funcptr));
   })
-BYTECODE(DCCALLPTR, "dccallptr", 2, 0, {
-    DCCallVM* vm = (DCCallVM*)POP();
+BYTECODE(DCCALLPTR, "dccallptr", 1, 0, {
     DCpointer funcptr = (DCpointer)POP();
-    PUSH(dcCallPointer(vm, funcptr));
+    PUSH(dcCallPointer(callvm, funcptr));
   })
 BYTECODE(DCLOAD, "dcloadlib", 1, 0, {
     char *libname = (char*)POP();
