@@ -58,55 +58,55 @@ BYTECODE(BRANCH, "branch", 0, FLAG_HASARG, {
     tmp = INTARG();
     ip += (tmp/sizeof(void*))-1;    
   })
-BYTECODE(FIELDGET, "field@", 0, FLAG_HASARG, {
+BYTECODE(FIELDGET, "field@", 1, FLAG_HASARG, {
     tmp = INTARG();
     void *ptr = (void*)POP();
     PUSH(*((cell*)(ptr+tmp)));
   })
-BYTECODE(FIELDSET, "field!", 0, FLAG_HASARG, {
+BYTECODE(FIELDSET, "field!", 1, FLAG_HASARG, {
     tmp = INTARG();
     void *ptr = (void*)POP();
     *((cell*)(ptr+tmp)) = POP();
   })
-BYTECODE(0BRANCH, "0branch", 0, FLAG_HASARG, {
+BYTECODE(0BRANCH, "0branch", 1, FLAG_HASARG, {
     tmp = INTARG();
     if(!POP()) ip += (tmp/sizeof(void*))-1;    
   })
-BYTECODE(1BRANCH, "1branch", 0, FLAG_HASARG, {
+BYTECODE(1BRANCH, "1branch", 1, FLAG_HASARG, {
     tmp = INTARG();
     if(POP()) ip += (tmp/sizeof(void*))-1;
   })
-BYTECODE(LTBRANCH, "<branch", 0, FLAG_HASARG, {
+BYTECODE(LTBRANCH, "<branch", 2, FLAG_HASARG, {
     tmp = INTARG();
     cell b = POP();
     cell a = POP();
     if(a<b) ip += (tmp/sizeof(void*))-1;
   })
-BYTECODE(GTBRANCH, ">branch", 0, FLAG_HASARG, {
+BYTECODE(GTBRANCH, ">branch", 2, FLAG_HASARG, {
     tmp = INTARG();
     cell b = POP();
     cell a = POP();
     if(a>b) ip += (tmp/sizeof(void*))-1;
   })
-BYTECODE(LTEBRANCH, "<=branch", 0, FLAG_HASARG, {
+BYTECODE(LTEBRANCH, "<=branch", 2, FLAG_HASARG, {
     tmp = INTARG();
     cell b = POP();
     cell a = POP();
     if(a<=b) ip += (tmp/sizeof(void*))-1;
   })
-BYTECODE(GTEBRANCH, ">=branch", 0, FLAG_HASARG, {
+BYTECODE(GTEBRANCH, ">=branch", 2, FLAG_HASARG, {
     tmp = INTARG();
     cell b = POP();
     cell a = POP();
     if(a>=b) ip += (tmp/sizeof(void*))-1;
   })
-BYTECODE(NEQBRANCH, "<>branch", 0, FLAG_HASARG, {
+BYTECODE(NEQBRANCH, "<>branch", 2, FLAG_HASARG, {
     tmp = INTARG();
     cell b = POP();
     cell a = POP();
     if(a!=b) ip += (tmp/sizeof(void*))-1;
   })
-BYTECODE(EQBRANCH, "=branch", 0, FLAG_HASARG, {
+BYTECODE(EQBRANCH, "=branch", 2, FLAG_HASARG, {
     tmp = INTARG();
     cell b = POP();
     cell a = POP();
