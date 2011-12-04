@@ -515,9 +515,7 @@ definitions
 
 : hide word find hidden ;
 
-\ hide current-vocab
 hide latest-defined-vocab
-\ hide vocab-name
 hide vocab-next
 hide vocab-latest
 hide set-vocab-name
@@ -608,20 +606,12 @@ find-first-builtin
     then
 ;
 
-\ variable quit-level
-\ 0 quit-level !
-
 : quit
-\    1 quit-level +!
-\    quit-level @ 2 > if
-\	." use print-stack-trace to view what happened" cr
-\    then
     begin
 	input-stream @ ?eof not
     while
 	interpret
     repeat
-\    die
 ;
 
 quit

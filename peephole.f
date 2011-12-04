@@ -20,6 +20,10 @@
 	' >branch of 1 endof
 	' <=branch of 1 endof
 	' >=branch of 1 endof
+	' 0<branch of 1 endof
+	' 0>branch of 1 endof
+	' 0<=branch of 1 endof
+	' 0>=branch of 1 endof
 	' <>branch of 1 endof
 	' =branch of 1 endof
 	0 swap
@@ -227,27 +231,13 @@ defer remove-noops
 : remove-noop ( startaddrofmove -- )
     dup dup cell+            ( startaddrofmove currdest nextinstraddr )
     begin
-	dup @ case
-	    ' lit of copy-instr endof
-	    ' lit+ of copy-instr endof
-	    ' lit- of copy-instr endof
-	    ' call of copy-instr endof
-	    ' jump of copy-instr endof
-	    ' var@ of copy-instr endof
-	    ' var! of copy-instr endof
-	    ' field@ of copy-instr endof
-	    ' field! of copy-instr endof
-	    ' branch of copy-instr endof
-	    ' 0branch of copy-instr endof
-	    ' 1branch of copy-instr endof
-	    ' <branch of copy-instr endof
-	    ' >branch of copy-instr endof
-	    ' <=branch of copy-instr endof
-	    ' >=branch of copy-instr endof
-	    ' <>branch of copy-instr endof
-	    ' =branch of copy-instr endof
-	    ' eow of copy-instr 2drop drop exit endof
-	endcase
+	dup @ find-bytecode ?hasarg if
+	    copy-instr
+	else
+	    dup @ ' eow = if
+		copy-instr 2drop drop exit
+	    then
+	then
 	copy-instr
     again
 ;
@@ -370,17 +360,19 @@ patterns
   p{ lit 0 - }p               -> r{ noop noop noop }r ,
   p{ lit -1 + }p              -> r{ 1- noop noop }r ,
   p{ lit -1 - }p              -> r{ 1+ noop noop }r ,
-  p{ swap dup }p              -> r{ swapdup noop }r ,
+\  p{ swap dup }p              -> r{ swapdup noop }r ,
   p{ swap over }p             -> r{ tuck noop }r   ,
   p{ swap swap }p             -> r{ noop noop }r   ,
   p{ dup swap }p              -> r{ dup noop }r    ,
   p{ drop drop }p             -> r{ 2drop noop }r  ,
   p{ lit ? @ }p               -> r{ var@ ? noop }r  ,
   p{ lit ? ! }p               -> r{ var! ? noop }r  ,
+
   p{ lit ? + @ }p             -> r{ field@ ? noop noop }r ,
   p{ lit ? + ! }p             -> r{ field! ? noop noop }r ,
   p{ lit+ ? @ }p              -> r{ field@ ? noop }r ,
   p{ lit+ ? ! }p              -> r{ field! ? noop }r ,
+
   p{ swap drop swap drop }p   -> r{ 2nip noop noop noop }r ,
   p{ swap drop }p             -> r{ nip noop }r ,
   p{ nip nip nip }p           -> r{ 2nip nip noop }r ,
@@ -399,6 +391,13 @@ patterns
   p{ dup drop }p              -> r{ noop noop }r ,
   p{ over drop }p             -> r{ noop noop }r ,
   p{ + + }p                   -> r{ bi+ noop }r ,
+
+  p{ 0> 0branch ? }p          -> r{ noop 0<=branch ? }r ,
+  p{ 0< 0branch ? }p          -> r{ noop 0>=branch ? }r ,
+  p{ 0>= 0branch ? }p          -> r{ noop 0<branch ? }r ,
+  p{ 0<= 0branch ? }p          -> r{ noop 0>branch ? }r ,
+  p{ 0= 0branch ? }p          -> r{ noop 1branch ? }r ,
+  p{ 0<> 0branch ? }p          -> r{ noop 0branch ? }r ,
   p{ = 0branch ? }p           -> r{ noop <>branch ? }r ,
   p{ <> 0branch ? }p          -> r{ noop =branch ? }r ,
   p{ < 0branch ? }p          -> r{ noop >=branch ? }r ,
@@ -410,7 +409,13 @@ patterns
   p{ < 1branch ? }p          -> r{ noop <branch ? }r ,
   p{ > 1branch ? }p          -> r{ noop >branch ? }r ,
   p{ <= 1branch ? }p          -> r{ noop <=branch ? }r ,
-  p{ >= 1branch ? }p          -> r{ noop >=branch ? }r
+  p{ >= 1branch ? }p          -> r{ noop >=branch ? }r ,
+  p{ 0> 1branch ? }p          -> r{ noop 0>branch ? }r ,
+  p{ 0< 1branch ? }p          -> r{ noop 0<branch ? }r ,
+  p{ 0>= 1branch ? }p          -> r{ noop 0>=branch ? }r ,
+  p{ 0<= 1branch ? }p          -> r{ noop 0<=branch ? }r ,
+  p{ 0= 1branch ? }p          -> r{ noop 0branch ? }r ,
+  p{ 0<> 1branch ? }p          -> r{ noop 1branch ? }r
 end-patterns
 
 s" ;" create immediate

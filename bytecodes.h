@@ -60,13 +60,13 @@ BYTECODE(BRANCH, "branch", 0, FLAG_HASARG, {
   })
 BYTECODE(FIELDGET, "field@", 1, FLAG_HASARG, {
     tmp = INTARG();
-    void *ptr = (void*)POP();
-    PUSH(*((cell*)(ptr+tmp)));
+    void *ptr = (void*)(POP() + tmp);
+    PUSH(*((cell*)ptr));
   })
-BYTECODE(FIELDSET, "field!", 1, FLAG_HASARG, {
+BYTECODE(FIELDSET, "field!", 2, FLAG_HASARG, {
     tmp = INTARG();
-    void *ptr = (void*)POP();
-    *((cell*)(ptr+tmp)) = POP();
+    void *ptr = (void*)(POP() + tmp);
+    *((cell*)ptr) = POP();
   })
 BYTECODE(0BRANCH, "0branch", 1, FLAG_HASARG, {
     tmp = INTARG();
@@ -99,6 +99,26 @@ BYTECODE(GTEBRANCH, ">=branch", 2, FLAG_HASARG, {
     cell b = POP();
     cell a = POP();
     if(a>=b) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(LTZBRANCH, "0<branch", 1, FLAG_HASARG, {
+    tmp = INTARG();
+    cell a = POP();
+    if(a<0) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(GTZBRANCH, "0>branch", 1, FLAG_HASARG, {
+    tmp = INTARG();
+    cell a = POP();
+    if(a>0) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(LTEZBRANCH, "0<=branch", 1, FLAG_HASARG, {
+    tmp = INTARG();
+    cell a = POP();
+    if(a<=0) ip += (tmp/sizeof(void*))-1;
+  })
+BYTECODE(GTEZBRANCH, "0>=branch", 1, FLAG_HASARG, {
+    tmp = INTARG();
+    cell a = POP();
+    if(a>=0) ip += (tmp/sizeof(void*))-1;
   })
 BYTECODE(NEQBRANCH, "<>branch", 2, FLAG_HASARG, {
     tmp = INTARG();
@@ -273,6 +293,12 @@ BYTECODE(XOR, "xor", 2, 0, {
     AT(0) ^= tmp;     
   })
 BYTECODE(IMMEDIATE, "immediate", 0, FLAG_IMMED, { latest->flags ^= FLAG_IMMED; })
+BYTECODE(GTEZ, "0>=", 1, 0, {
+    AT(0) = AT(0) >= 0;    
+  })
+BYTECODE(LTEZ, "0<=", 1, 0, {
+    AT(0) = AT(0) <= 0;    
+  })
 BYTECODE(GTZ, "0>", 1, 0, {
     AT(0) = AT(0) > 0;    
   })
@@ -348,7 +374,6 @@ BYTECODE(COMMA, ",", 1, 0, {
     tmp = POP();
     *(cell*)here = tmp;
     here += sizeof(cell);    
-    check_here();
   })
 BYTECODE(STORE, "!", 2, 0, {
     cell *ptr = (cell*)POP();
@@ -387,7 +412,7 @@ BYTECODE(TOCFA, ">cfa", 1, 0, {
     dict_hdr_t *ptr = (dict_hdr_t*)POP();
     PUSH((ptr+1));    
   })
-BYTECODE(TELL, "tell", 1, 0, { fprintf(stdout, "%s", (char*)POP()); })
+BYTECODE(TELL, "tell", 1, 0, { fputs((char*)POP(), outp); })
 BYTECODE(MALLOC, "malloc", 1, 0, {
     tmp = POP();
     PUSH(MALLOC(tmp));    

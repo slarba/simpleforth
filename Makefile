@@ -30,4 +30,4 @@ dyncall:
 
 boehmgc:
 	tar xzvf gc-7.1.tar.gz
-	(cd gc-7.1; ./configure --prefix=`pwd`/../boehmgc; make; make install)
+	(cd gc-7.1; ./configure --disable-gcj-support --prefix=`pwd`/../boehmgc; make; make install)
