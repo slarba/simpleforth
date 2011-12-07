@@ -575,21 +575,40 @@ BYTECODE(DCSYM, "dcsymbol", 2, 0, {
     char *symbol = (char*)POP();
     PUSH(dlFindSymbol(lib, symbol));
   })
-BYTECODE(SAVESTATE, "savestate", 1, 0, {
-    cell *ptr = (cell*)POP();
-    *ptr++ = (cell)ds;
-    *ptr++ = (cell)rs;
-    *ptr++ = (cell)ts;
-    *ptr++ = (cell)s0;
-    *ptr++ = (cell)r0;
-    *ptr++ = (cell)t0;
+BYTECODE(NEWTHREAD, "new-thread", 0, 0, {
+    int ds_size = (int)POP();
+    int rs_size = (int)POP();
+    int ts_size = (int)POP();
+    void **entry = (void**)POP();
+    create_thread(ds_size, rs_size, ts_size, entry);
   })
-BYTECODE(RESTORESTATE, "restorestate", 1, 0, {
-    cell *ptr = (cell*)POP();
-    ds = (cell*)*ptr++;
-    rs = (void***)*ptr++;
-    ts = (cell*)*ptr++;
-    s0 = (cell*)*ptr++;
-    r0 = (void***)*ptr++;
-    t0 = (cell*)*ptr++;
+BYTECODE(KILLTHREAD, "kill-thread", 0, 0, {
+    kill_thread();
+
+    ip = current_thread->ip;
+    ds = current_thread->ds;
+    rs = current_thread->rs;
+    ts = current_thread->ts;
+    t0 = current_thread->t0;
+    s0 = current_thread->s0;
+    r0 = current_thread->r0;
+  })
+BYTECODE(SWITCHTHREAD, "pause", 0, 0, {
+    current_thread->ip = ip;
+    current_thread->ds = ds;
+    current_thread->rs = rs;
+    current_thread->ts = ts;
+    current_thread->t0 = t0;
+    current_thread->s0 = s0;
+    current_thread->r0 = r0;
+
+    current_thread = current_thread->next;
+
+    ip = current_thread->ip;
+    ds = current_thread->ds;
+    rs = current_thread->rs;
+    ts = current_thread->ts;
+    t0 = current_thread->t0;
+    s0 = current_thread->s0;
+    r0 = current_thread->r0;
   })

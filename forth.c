@@ -63,6 +63,19 @@ typedef struct dict_hdr_t {
   char                 name[MAX_WORD_NAME_LEN];
 } dict_hdr_t;
 
+typedef struct thread_state_t {
+  struct thread_state_t *next;
+
+  void **ip;
+
+  cell *ds;
+  void ***rs;
+  cell *ts;
+  cell *t0;
+  cell *s0;
+  void ***r0;
+} thread_state_t;
+
 /* utility structure for creating builtins */
 typedef struct builtin_word_t {
   char *name;
@@ -75,6 +88,7 @@ static void       *here;              /* working memory */
 static void       *here0;             /* beginning of working memory */
 static cell       here_size;          /* size of allocated pool */
 static dict_hdr_t *latest = NULL;
+static thread_state_t *current_thread = NULL;
 
 /* utility functions */
 static dict_hdr_t *find_word(const char *name) {
@@ -242,6 +256,48 @@ static void create_builtin(builtin_word_t *b) {
   comma((cell)b->code);
 }
 
+static thread_state_t *init_thread(cell *s0, void ***r0, cell *t0, void **entrypoint)
+{
+  thread_state_t *new = MALLOC(sizeof(thread_state_t));
+
+  new->ip = entrypoint;
+  new->s0 = s0;
+  new->r0 = r0;
+  new->t0 = t0;
+  new->ds = new->s0;
+  new->rs = new->r0;
+  new->ts = new->t0;
+
+  if(!current_thread) {
+    current_thread = new;
+    new->next = new;
+  } else {
+    new->next = current_thread->next;
+    current_thread->next = new;
+  }
+
+  return new;
+}
+
+static thread_state_t *create_thread(int ds_size, int rs_size, int ts_size, void **entrypoint)
+{
+  return init_thread((cell*)MALLOC(ds_size*sizeof(cell)),
+		     (void***)MALLOC(rs_size*sizeof(cell)),
+		     (cell*)MALLOC(ts_size*sizeof(cell)),
+		     entrypoint);
+}
+
+static void kill_thread() {
+  if(!current_thread) return;
+  if(current_thread->next == current_thread) {
+    return;
+  }
+  thread_state_t *i = current_thread;
+  while(i->next!=current_thread) i = i->next;
+  i->next = current_thread->next;
+  current_thread = i;
+}
+
 #define PUSH(x)     *--ds = (cell)(x)
 #define POP()       (*ds++)
 #define INTARG()    ((cell)(*ip++))
@@ -328,6 +384,9 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("output-stream", (cell) &outp);
     create_constant("argc", (cell)argc);
     create_constant("argv", (cell)argv);
+    create_constant("current-thread", (cell)&current_thread);
+
+    init_thread(s0, r0, t0, ip);
 
     // QUIT is the topmost interpreter loop: interpret forever. better version implemented in
     // forth later that supports eof etc
