@@ -64,10 +64,9 @@ typedef struct dict_hdr_t {
 } dict_hdr_t;
 
 typedef struct thread_state_t {
+  cell killed;
   struct thread_state_t *next;
-
   void **ip;
-
   cell *ds;
   void ***rs;
   cell *ts;
@@ -259,7 +258,7 @@ static void create_builtin(builtin_word_t *b) {
 static thread_state_t *init_thread(cell *s0, void ***r0, cell *t0, void **entrypoint)
 {
   thread_state_t *new = MALLOC(sizeof(thread_state_t));
-
+  new->killed = 0;
   new->ip = entrypoint;
   new->s0 = s0;
   new->r0 = r0;
@@ -292,6 +291,7 @@ static void kill_thread() {
   if(current_thread->next == current_thread) {
     return;
   }
+  current_thread->killed = 1;
   thread_state_t *i = current_thread;
   while(i->next!=current_thread) i = i->next;
   i->next = current_thread->next;

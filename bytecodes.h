@@ -580,7 +580,7 @@ BYTECODE(NEWTHREAD, "new-thread", 0, 0, {
     int rs_size = (int)POP();
     int ts_size = (int)POP();
     void **entry = (void**)POP();
-    create_thread(ds_size, rs_size, ts_size, entry);
+    PUSH(create_thread(ds_size, rs_size, ts_size, entry));
   })
 BYTECODE(KILLTHREAD, "kill-thread", 0, 0, {
     kill_thread();

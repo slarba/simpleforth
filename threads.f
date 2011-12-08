@@ -7,6 +7,14 @@
     default-ts-size default-rs-size default-ds-size new-thread
 ;
 
+: join ( thread -- )
+    begin
+	dup @ 0= while
+	    pause
+    repeat
+    drop
+;
+
 : pause-forever
     begin
 	pause
@@ -32,5 +40,6 @@
 : run-tests
     ' test1 create-thread
     ' test2 create-thread
-    pause-forever
+    join
+    join
 ;
