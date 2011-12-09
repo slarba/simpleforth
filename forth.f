@@ -275,7 +275,7 @@ tsp!
 
 : make-const-str ( str -- conststr )
     dup consthere @
-    strcpy
+    strcpy drop
     consthere @ swap
     strlen 1+ consthere +!
     constalign

@@ -417,6 +417,10 @@ BYTECODE(MALLOC, "malloc", 1, 0, {
     tmp = POP();
     PUSH(MALLOC(tmp));    
   })
+BYTECODE(MALLOCATOM, "malloc-atomic", 1, 0, {
+    tmp = POP();
+    PUSH(MALLOC_ATOMIC(tmp));
+  })
 BYTECODE(REALLOC, "mrealloc", 2, 0, {
     void *ptr = (void*)POP();
     tmp = POP();
@@ -438,14 +442,25 @@ BYTECODE(CMOVE, "cmove", 3, 0, {
     void *src = (void*)POP();
     memmove(dst, src, tmp);
   })
+BYTECODE(STRCAT, "strcat", 2, 0, {
+    char *dst = (char*)POP();
+    char *src = (char*)POP();
+    PUSH(strcat(dst, src));
+  })
 BYTECODE(STRLENGTH, "strlen", 1, 0, {
     char *str = (char*)POP();
     PUSH(strlen(str));
   })
+BYTECODE(STRNCOPY, "strncpy", 3, 0, {
+    tmp = POP();
+    char *dst = (char*)POP();
+    char *src = (char*)POP();
+    PUSH(strncpy(dst, src, tmp));    
+  })
 BYTECODE(STRCOPY, "strcpy", 2, 0, {
     char *dst = (char*)POP();
     char *src = (char*)POP();
-    strcpy(dst, src);
+    PUSH(strcpy(dst, src));
   })
 BYTECODE(STRCOMP, "strcmp", 2, 0, {
     char *b = (char*)POP();
