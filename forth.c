@@ -16,6 +16,7 @@
 #include <dyncall.h>
 #include <dynload.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 
 #ifdef USE_GC
  #include <gc.h>
@@ -190,6 +191,7 @@ static char *prompt_line(const char *prompt, reader_state_t *state) {
   if(!tmp) {
     return NULL;
   }
+  add_history(tmp);
   strncpy(state->linebuf, tmp, state->linebuf_size);
   free(tmp);
   state->next_char = state->linebuf;
@@ -413,6 +415,40 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 #include "bytecodes.h"
 }
 
+static char *word_completion_generator(const char *text, int state)
+{
+  static dict_hdr_t *index = NULL;
+  static int len=0;
+
+  if(!state) {
+    len = strlen(text);
+    index = latest;
+  }
+
+  while(index!=NULL) {
+    if(!(index->flags & FLAG_HIDDEN) && strncmp(index->name, text, len)==0) {
+      char *n = strdup(index->name);
+      if(!n) { fprintf(stderr, "Error: out of memory, exiting\n"); exit(1); }
+      index = index->next;
+      return n;
+    }
+    index = index->next;
+  }
+
+  return NULL;
+}
+
+static char **word_completion(const char *text, int start, int end)
+{
+  return rl_completion_matches(text, &word_completion_generator);
+}
+
+static void init_readline()
+{
+  rl_readline_name = "sforth";
+  rl_attempted_completion_function = &word_completion;
+}
+
 int main(int argc, char **argv) {
   cell datastack[1024];
   void **returnstack[512];
@@ -420,6 +456,8 @@ int main(int argc, char **argv) {
 #ifdef USE_GC
   GC_INIT();
 #endif
+
+  init_readline();
 
   reader_state_t *fp = open_file("forth.f", "r");
   if(!fp) {

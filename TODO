@@ -1,4 +1,7 @@
 
+* peephole optimizer design flaw:
+  - branch target inside a pattern that collapses into a superinstruction bug
+
 * unit test framework!!   OK
 
 * a complete set of unit tests to test the interpreter features!
@@ -7,7 +10,11 @@
 
 * string formatting
 
+* co-operative threads   OK
+  - do thread creation in forth, not worth of bytecode
+
 * file-io (read and write operations)
+  - select and async IO with co-operative threads
 
 * constant folding  - SEMI-OK, more runs to chain longer constant exprs, logical exprs
   lit x
@@ -39,11 +46,12 @@
 
 * floating point support
   - stack, operations
+  - single and double precision stacks?
 
 * oop system to use temp stack for self pointers
 
 * locals implementation
 
-* autocompletion using realine to search vocabulary
+* autocompletion using realine to search vocabulary - OK
 
 * general refactoring of code
