@@ -5,7 +5,7 @@ CC = gcc # -4.5
 PROF=
 INCLUDES=-I./boehmgc/include -I./dyncall/include $(PROF)
 CFLAGS = -Wall $(CONFFLAGS) -O4 $(INCLUDES) $(PROF)
-LDFLAGS = -L./boehmgc/lib -L./dyncall/lib $(PROF) -lgc -lreadline -ldyncall_s -ldynload_s
+LDFLAGS = -L./boehmgc/lib -L./dyncall/lib $(PROF) -lm -lgc -lreadline -ldyncall_s -ldynload_s
 
 all: boehmgc dyncall forth.S forth
 

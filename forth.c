@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <limits.h>
+#include <math.h>
 #include <sys/mman.h>
 
 #include <dyncall.h>
@@ -71,9 +72,11 @@ typedef struct thread_state_t {
   cell *ds;
   void ***rs;
   cell *ts;
+  float *fs;
   cell *t0;
   cell *s0;
   void ***r0;
+  float *f0;
 } thread_state_t;
 
 /* utility structure for creating builtins */
@@ -302,6 +305,8 @@ static void kill_thread() {
 
 #define PUSH(x)     *--ds = (cell)(x)
 #define POP()       (*ds++)
+#define FPUSH(x)     *--fs = (float)(x)
+#define FPOP()       (*fs++)
 #define INTARG()    ((cell)(*ip++))
 #define ARG()       (*ip++)
 #define PUSHRS(x)   *--rs = (void**)(x)
@@ -327,7 +332,9 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
 
   cell *s0 = ds;
   cell *t0 = NULL;
+  float *f0 = NULL;
   cell *ts = NULL;
+  float *fs = NULL;
   void ***r0 = rs;
 
   void **nestingstack_space[NESTINGSTACK_MAX_DEPTH];
@@ -374,6 +381,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("s0", (cell) &s0);
     create_constant("r0", (cell) &r0);
     create_constant("t0", (cell) &t0);
+    create_constant("f0", (cell) &f0);
     create_constant("state", (cell) &state);
     create_constant("cellsize", (cell)sizeof(cell));
     create_constant("base", (cell) &base);

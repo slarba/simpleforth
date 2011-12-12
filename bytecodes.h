@@ -472,7 +472,11 @@ BYTECODE(PARSENUM, "number", 1, 0, {
     char *str = (char*)POP();
     cell val = (cell)strtol(str, &endptr, base);
     if(*endptr!='\0') {
-      printf("ERROR: not a valid number: %s\n", str);
+      float val = strtof(str, &endptr);
+      if(*endptr!='\0') {
+	printf("ERROR: not a valid number: %s\n", str);
+      } else
+	FPUSH(val);
     }
     else PUSH(val);
   })
@@ -604,18 +608,22 @@ BYTECODE(KILLTHREAD, "kill-thread", 0, 0, {
     ds = current_thread->ds;
     rs = current_thread->rs;
     ts = current_thread->ts;
+    fs = current_thread->fs;
     t0 = current_thread->t0;
     s0 = current_thread->s0;
     r0 = current_thread->r0;
+    f0 = current_thread->f0;
   })
 BYTECODE(SWITCHTHREAD, "pause", 0, 0, {
     current_thread->ip = ip;
     current_thread->ds = ds;
     current_thread->rs = rs;
     current_thread->ts = ts;
+    current_thread->fs = fs;
     current_thread->t0 = t0;
     current_thread->s0 = s0;
     current_thread->r0 = r0;
+    current_thread->f0 = f0;
 
     current_thread = current_thread->next;
 
@@ -623,7 +631,97 @@ BYTECODE(SWITCHTHREAD, "pause", 0, 0, {
     ds = current_thread->ds;
     rs = current_thread->rs;
     ts = current_thread->ts;
+    fs = current_thread->fs;
     t0 = current_thread->t0;
     s0 = current_thread->s0;
     r0 = current_thread->r0;
+    f0 = current_thread->f0;
+  })
+BYTECODE(SETFS, "fsp!", 1, 0, {
+    fs = (float*)POP();
+  })
+BYTECODE(GETFS, "fsp@", 0, 0, {
+    PUSH(fs);
+  })
+BYTECODE(FADD, "f+", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    FPUSH(a+b);
+  })
+BYTECODE(FSUB, "f-", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    FPUSH(a-b);
+  })
+BYTECODE(FMUL, "f*", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    FPUSH(a*b);
+  })
+BYTECODE(FDIV, "f/", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    FPUSH(a/b);
+  })
+BYTECODE(POWF, "powf", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    FPUSH(powf(a,b));
+  })
+BYTECODE(FLT, "f<", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    PUSH(a<b);
+  })
+BYTECODE(FGT, "f>", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    PUSH(a>b);
+  })
+BYTECODE(FFLOOR, "ffloor", 0, 0, {
+    float a = FPOP();
+    FPUSH(floorf(a));
+  })
+BYTECODE(FSQRT, "fsqrt", 0, 0, {
+    float a = FPOP();
+    FPUSH(sqrtf(a));
+  })
+BYTECODE(FSIN, "fsin", 0, 0, {
+    float a = FPOP();
+    FPUSH(sinf(a));
+  })
+BYTECODE(FCOS, "fcos", 0, 0, {
+    float a = FPOP();
+    FPUSH(cosf(a));
+  })
+BYTECODE(FTAN, "ftan", 0, 0, {
+    float a = FPOP();
+    FPUSH(tanf(a));
+  })
+BYTECODE(FASIN, "fasin", 0, 0, {
+    float a = FPOP();
+    FPUSH(asinf(a));
+  })
+BYTECODE(FACOS, "facos", 0, 0, {
+    float a = FPOP();
+    FPUSH(acosf(a));
+  })
+BYTECODE(FATAN, "fatan", 0, 0, {
+    float a = FPOP();
+    FPUSH(atanf(a));
+  })
+BYTECODE(FCEIL, "fceil", 0, 0, {
+    float a = FPOP();
+    FPUSH(ceilf(a));
+  })
+BYTECODE(FTOI, "f>i", 0, 0, {
+    float a = FPOP();
+    PUSH((cell)a);
+  })
+BYTECODE(ITOF, "i>f", 1, 0, {
+    cell a = POP();
+    FPUSH(a);
+  })
+BYTECODE(FOUTP, "f.", 0, 0, {
+    fprintf(outp, "%f", FPOP());
   })

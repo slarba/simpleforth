@@ -61,6 +61,10 @@ datahere0 !
 dup t0 !
 tsp!
 
+1024 cellsize * allot
+dup f0 !
+fsp!
+
 : cell inline cellsize ;
 : cells inline cellsize * ;
 
