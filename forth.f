@@ -602,10 +602,25 @@ find-first-builtin
 	    then
 	then
     else
-	number
-	state @ if
-	    ' lit ,
-	    ,
+	dup number
+	if
+	    state @ if
+		' lit ,
+		,
+		drop
+	    else
+		nip
+	    then
+	else
+	    fnumber
+	    if
+		state @ if
+		    ' flit ,
+		    f,
+		then
+	    else
+		." no such word" cr
+	    then
 	then
     then
 ;

@@ -308,12 +308,14 @@ static void kill_thread() {
 #define FPUSH(x)     *--fs = (float)(x)
 #define FPOP()       (*fs++)
 #define INTARG()    ((cell)(*ip++))
+#define FLOATARG()  (*(float*)ip)
 #define ARG()       (*ip++)
 #define PUSHRS(x)   *--rs = (void**)(x)
 #define POPRS()     (*rs++)
 #define NEXT()      goto **ip++
 #define TOP()       (*ds)
 #define AT(x)       (*(ds+(x)))
+#define FAT(x)      (*(fs+(x)))
 
 /* utilies for calculating branch offsets in inline bytecode and referencing bytecodes */
 #define OFFSET(x) (void*)((x)*sizeof(cell))

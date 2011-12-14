@@ -167,6 +167,9 @@ BYTECODE(RSPGET, "rsp@", 0, 0, { PUSH(rs); })
 BYTECODE(LIT, "lit", 0, FLAG_HASARG, { PUSH(INTARG()); })
 BYTECODE(LITPLUS, "lit+", 1, FLAG_HASARG, { AT(0) += INTARG(); })
 BYTECODE(LITMINUS, "lit-", 1, FLAG_HASARG, { AT(0) -= INTARG(); })
+BYTECODE(FLIT, "flit", 0, FLAG_HASARG, { FPUSH(FLOATARG()); ip++; })
+BYTECODE(FLITPLUS, "flit+", 0, FLAG_HASARG, { FAT(0) += FLOATARG(); ip++; })
+BYTECODE(FLITMINUS, "flit-", 0, FLAG_HASARG, { FAT(0) -= FLOATARG(); ip++; })
 BYTECODE(DUP, "dup", 1, 0, {
     tmp = TOP();
     PUSH(tmp);    
@@ -375,6 +378,11 @@ BYTECODE(COMMA, ",", 1, 0, {
     *(cell*)here = tmp;
     here += sizeof(cell);    
   })
+BYTECODE(FCOMMA, "f,", 0, 0, {
+    float val = FPOP();
+    *(float*)here = val;
+    here += sizeof(cell);    
+  })
 BYTECODE(STORE, "!", 2, 0, {
     cell *ptr = (cell*)POP();
     tmp = POP();
@@ -472,13 +480,22 @@ BYTECODE(PARSENUM, "number", 1, 0, {
     char *str = (char*)POP();
     cell val = (cell)strtol(str, &endptr, base);
     if(*endptr!='\0') {
-      float val = strtof(str, &endptr);
-      if(*endptr!='\0') {
-	printf("ERROR: not a valid number: %s\n", str);
-      } else
-	FPUSH(val);
+      PUSH(0);
+    } else {
+      PUSH(val);
+      PUSH(1);
     }
-    else PUSH(val);
+  })
+BYTECODE(PARSEFNUM, "fnumber", 1, 0, {
+    char *endptr = NULL;
+    char *str = (char*)POP();
+    float val = strtof(str, &endptr);
+    if(*endptr!='\0') {
+      PUSH(0);
+    } else {
+      FPUSH(val);
+      PUSH(1);
+    }
   })
 BYTECODE(INTERPRET, "interpret", 0, 0, {
     char *word = read_word(inputstate,linebuf);
