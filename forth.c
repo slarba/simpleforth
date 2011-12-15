@@ -12,6 +12,7 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <float.h>
 #include <sys/mman.h>
 
 #include <dyncall.h>
@@ -255,6 +256,14 @@ static void create_constant(const char *name, cell value) {
   assemble_word(name, FLAG_INLINE, flagdef, sizeof(flagdef));
 }
 
+typedef float aliasingfloat __attribute__((__may_alias__));
+
+static void create_fconstant(const char *name, float value) {
+  void *flagdef[] = { get_builtin("flit"), 0, get_builtin("exit") };
+  *(aliasingfloat*)(&flagdef[1]) = value;
+  assemble_word(name, FLAG_INLINE, flagdef, sizeof(flagdef));
+}
+
 static void create_builtin(builtin_word_t *b) {
   create_word(b->name, b->flags | FLAG_BUILTIN);
   comma((cell)b->code);
@@ -314,6 +323,7 @@ static void kill_thread() {
 #define POPRS()     (*rs++)
 #define NEXT()      goto **ip++
 #define TOP()       (*ds)
+#define FTOP()      (*fs)
 #define AT(x)       (*(ds+(x)))
 #define FAT(x)      (*(fs+(x)))
 
@@ -397,6 +407,9 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("argc", (cell)argc);
     create_constant("argv", (cell)argv);
     create_constant("current-thread", (cell)&current_thread);
+    create_fconstant("FLT_MAX", FLT_MAX);
+    create_fconstant("FLT_MIN", FLT_MIN);
+    create_fconstant("PI", 3.141592654);
 
     init_thread(s0, r0, t0, ip);
 

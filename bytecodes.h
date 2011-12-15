@@ -68,6 +68,16 @@ BYTECODE(FIELDSET, "field!", 2, FLAG_HASARG, {
     void *ptr = (void*)(POP() + tmp);
     *((cell*)ptr) = POP();
   })
+BYTECODE(FFIELDGET, "ffield@", 1, FLAG_HASARG, {
+    tmp = INTARG();
+    void *ptr = (void*)(POP() + tmp);
+    FPUSH(*((float*)ptr));
+  })
+BYTECODE(FFIELDSET, "ffield!", 1, FLAG_HASARG, {
+    tmp = INTARG();
+    void *ptr = (void*)(POP() + tmp);
+    *((float*)ptr) = FPOP();
+  })
 BYTECODE(0BRANCH, "0branch", 1, FLAG_HASARG, {
     tmp = INTARG();
     if(!POP()) ip += (tmp/sizeof(void*))-1;    
@@ -174,12 +184,19 @@ BYTECODE(DUP, "dup", 1, 0, {
     tmp = TOP();
     PUSH(tmp);    
   })
+BYTECODE(FDUP, "fdup", 0, 0, {
+    float val = FTOP();
+    FPUSH(val);    
+  })
 BYTECODE(DUPAT, "dup@", 1, 0, {
     cell *addr = (cell*)TOP();
     PUSH(*addr);
   })
 BYTECODE(NIP, "nip", 2, 0, {
     AT(1) = AT(0); ds++;
+  })
+BYTECODE(FNIP, "fnip", 0, 0, {
+    FAT(1) = FAT(0); fs++;
   })
 BYTECODE(2NIP, "2nip", 3, 0, {
     AT(2) = AT(0); ds+=2;
@@ -190,6 +207,12 @@ BYTECODE(2DUP, "2dup", 2, 0, {
     tmp = AT(1);
     PUSH(tmp);    
   })
+BYTECODE(F2DUP, "f2dup", 0, 0, {
+    float tmp = FAT(1);
+    FPUSH(tmp);
+    tmp = FAT(1);
+    FPUSH(tmp);    
+  })
 BYTECODE(CONDDUP, "?dup", 1, 0, {
     tmp = TOP();
     if(tmp) PUSH(tmp);    
@@ -198,6 +221,11 @@ BYTECODE(SWAP, "swap", 2, 0, {
     tmp = AT(1);
     AT(1) = AT(0);
     AT(0) = tmp;    
+  })
+BYTECODE(FSWAP, "fswap", 0, 0, {
+    float tmp = FAT(1);
+    FAT(1) = FAT(0);
+    FAT(0) = tmp;    
   })
 BYTECODE(SWAPDUP, "swapdup", 2, 0, {
     tmp = AT(1);
@@ -217,6 +245,7 @@ BYTECODE(TUCK, "tuck", 2, 0, {
     PUSH(tmp);
   })
 BYTECODE(DROP, "drop", 1, 0, { ++ds; })
+BYTECODE(FDROP, "fdrop", 0, 0, { ++fs; })
 BYTECODE(ROT, "rot", 3, 0, {
     cell eax = POP();
     cell ebx = POP();
@@ -392,13 +421,30 @@ BYTECODE(FETCH, "@", 1, 0, {
     cell *ptr = (cell*)POP();
     PUSH(*ptr);    
   })
+BYTECODE(FSTORE, "f!", 1, 0, {
+    float *ptr = (float*)POP();
+    float val = FPOP();
+    *ptr = val;
+  })
+BYTECODE(FFETCH, "f@", 1, 0, {
+    float *ptr = (float*)POP();
+    FPUSH(*ptr);    
+  })
 BYTECODE(VARAT, "var@", 0, FLAG_HASARG, {
     cell *ptr = (cell*)ARG();
     PUSH(*ptr);
   })
-BYTECODE(VARTO, "var!", 0, FLAG_HASARG, {
+BYTECODE(VARTO, "var!", 1, FLAG_HASARG, {
     cell *ptr = (cell*)ARG();
     *ptr = POP();
+  })
+BYTECODE(FVARAT, "fvar@", 0, FLAG_HASARG, {
+    float *ptr = (float*)ARG();
+    FPUSH(*ptr);
+  })
+BYTECODE(FVARTO, "fvar!", 0, FLAG_HASARG, {
+    float *ptr = (float*)ARG();
+    *ptr = FPOP();
   })
 BYTECODE(CSTORE, "c!", 2, 0, {
     char *ptr = (char*)POP();
@@ -694,6 +740,20 @@ BYTECODE(FGT, "f>", 0, 0, {
     float b = FPOP();
     float a = FPOP();
     PUSH(a>b);
+  })
+BYTECODE(FLE, "f<=", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    PUSH(a<=b);
+  })
+BYTECODE(FGE, "f>=", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    PUSH(a>=b);
+  })
+BYTECODE(FABS, "fabs", 0, 0, {
+    float a = FPOP();
+    FPUSH(fabs(a));
   })
 BYTECODE(FFLOOR, "ffloor", 0, 0, {
     float a = FPOP();

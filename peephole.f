@@ -369,11 +369,17 @@ patterns
   p{ drop drop }p             -> r{ 2drop noop }r  ,
   p{ lit ? @ }p               -> r{ var@ ? noop }r  ,
   p{ lit ? ! }p               -> r{ var! ? noop }r  ,
+  p{ lit ? f@ }p               -> r{ fvar@ ? noop }r  ,
+  p{ lit ? f! }p               -> r{ fvar! ? noop }r  ,
 
   p{ lit ? + @ }p             -> r{ field@ ? noop noop }r ,
   p{ lit ? + ! }p             -> r{ field! ? noop noop }r ,
   p{ lit+ ? @ }p              -> r{ field@ ? noop }r ,
   p{ lit+ ? ! }p              -> r{ field! ? noop }r ,
+  p{ lit ? + f@ }p             -> r{ ffield@ ? noop noop }r ,
+  p{ lit ? + f! }p             -> r{ ffield! ? noop noop }r ,
+  p{ lit+ ? f@ }p              -> r{ ffield@ ? noop }r ,
+  p{ lit+ ? f! }p              -> r{ ffield! ? noop }r ,
 
   p{ swap drop swap drop }p   -> r{ 2nip noop noop noop }r ,
   p{ swap drop }p             -> r{ nip noop }r ,

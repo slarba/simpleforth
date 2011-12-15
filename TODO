@@ -6,7 +6,7 @@
 
 * a complete set of unit tests to test the interpreter features!
 
-* string concatenation
+* string concatenation  OK
 
 * string formatting
 
@@ -39,12 +39,12 @@
   - drops into a debug interpreter, exit with a word that resumes execution
   - disassemble next instructions to be executed etc
 
-* unsigned comparisons
+* unsigned comparisons OK
   - print-stack-trace crashes on 32bit systems due to this
 
 * in-place resizable "here area"   - NOK, trouble with mremap
 
-* floating point support
+* floating point support OK - some optimizations tbd
   - stack, operations
   - single and double precision stacks?
 

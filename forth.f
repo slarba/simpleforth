@@ -221,6 +221,11 @@ fsp!
 : false inline 0 ;
 : not inline 0= ;
 
+: min 2dup < if drop else nip then ;
+: max 2dup > if drop else nip then ;
+: fmin f2dup f< if fdrop else fnip then ;
+: fmax f2dup f> if fdrop else fnip then ;
+
 : aligned
     cellsize 1- + cellsize 1- invert and ;
 
@@ -727,6 +732,13 @@ hide copytohere
     word create
     ' lit ,
     ,
+    ' exit ,
+;
+
+: fconstant
+    word create
+    ' flit ,
+    f,
     ' exit ,
 ;
 
