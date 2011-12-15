@@ -3,7 +3,7 @@ variable exit-debugger
 variable debugger-returnaddr
 
 : breakpoint
-    ." BREAKPOINT, say 'continue' to resume" cr
+    ." BREAKPOINT, say 'continue' to resume or 'break' to reset" cr
     0 exit-debugger !
     rsp@ @ debugger-returnaddr !
     begin
@@ -27,6 +27,12 @@ variable debugger-returnaddr
     1 exit-debugger !
 ;
 
+: break immediate
+    ." sorry, 'break' not implemented" cr
+;
+
 : disasm-current
     debugger-returnaddr @ disasm
 ;
+
+' breakpoint debugger-vector !

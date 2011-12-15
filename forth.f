@@ -65,6 +65,10 @@ tsp!
 dup f0 !
 fsp!
 
+: null-debugger-vector ;
+
+' null-debugger-vector debugger-vector !
+
 : cell inline cellsize ;
 : cells inline cellsize * ;
 

@@ -352,6 +352,8 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
   void **nestingstack_space[NESTINGSTACK_MAX_DEPTH];
   void ***nestingstack = nestingstack_space + NESTINGSTACK_MAX_DEPTH;
 
+  void **debugger_vector = NULL;
+
   void *builtin_immediatebuf[2] = { NULL, WORD(IRETURN) };
   void *word_immediatebuf[3]    = { WORD(CALL), NULL, WORD(IRETURN) };
 
@@ -407,6 +409,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("argc", (cell)argc);
     create_constant("argv", (cell)argv);
     create_constant("current-thread", (cell)&current_thread);
+    create_constant("debugger-vector", (cell)&debugger_vector);
     create_fconstant("FLT_MAX", FLT_MAX);
     create_fconstant("FLT_MIN", FLT_MIN);
     create_fconstant("PI", 3.141592654);
@@ -428,6 +431,8 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
  #define CHECKSTACK(name, amt) if((((cell)s0-(cell)ds)/sizeof(cell)) < amt)  \
     {                                                                        \
       printf("%s: stack underflow\n", (name));                               \
+      PUSHRS(ip);							\
+      ip = debugger_vector;						\
       NEXT();                                                                \
     }
 #else
