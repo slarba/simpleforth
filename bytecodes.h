@@ -799,6 +799,36 @@ BYTECODE(ITOF, "i>f", 1, 0, {
     cell a = POP();
     FPUSH(a);
   })
-BYTECODE(FOUTP, "f.", 0, 0, {
-    fprintf(outp, "%f", FPOP());
+BYTECODE(FORMAT, "format", 1, 0, {
+    char *output = NULL;
+    char *fmt = (char*)POP();
+    dcReset(callvm);
+    dcMode(callvm, DC_CALL_C_ELLIPSIS);
+    dcArgPointer(callvm, &output);
+    dcArgPointer(callvm, fmt);
+    while(*fmt!='\0') {
+      if(*fmt++=='%') {
+	switch(*fmt++) {
+	case '%':
+	  continue;
+	case 'd':
+	  dcArgInt(callvm, (int)POP());
+	  break;
+	case 'e':
+	case 'f':
+	  dcArgDouble(callvm, (double)FPOP());
+	  break;
+	case 's':
+	  dcArgPointer(callvm, (void*)POP());
+	  break;
+	}
+      }
+    }
+    dcCallInt(callvm, &asprintf);
+    dcMode(callvm, DC_CALL_C_DEFAULT);
+    char *tmp = (char*)MALLOC_ATOMIC(strlen(output)+1);
+    strcpy(tmp, output);
+    free(output);
+    PUSH(tmp);
   })
+
