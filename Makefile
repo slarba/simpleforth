@@ -6,8 +6,10 @@ PROF=
 INCLUDES=$(PROF)
 CFLAGS = -Wall $(CONFFLAGS) -O4 $(INCLUDES) $(PROF)
 LDFLAGS = $(PROF) -lm -lgc -lreadline -ldyncall_s -ldynload_s
+INSTALL = install
+bindir = $(prefix)/usr/bin
 
-all: forth.S forth
+all: forth
 
 clean:
 	rm -f forth core gmon.out *.gcov *.gcno *.gcda *.o *.S *~
@@ -23,6 +25,9 @@ forth.o: forth.c bytecodes.h
 
 forth: forth.o
 	$(CC) -o $@ $< $(LDFLAGS)
+
+install: forth
+	$(INSTALL) forth $(bindir)
 
 dyncall:
 	tar xzvf dyncall-0.6.tar.gz
