@@ -1,6 +1,6 @@
 
 CONFFLAGS=-DUSE_GC=1 -DSAFE_INTERPRETER=1
-CC = gcc # -4.5
+# CC = gcc # -4.5
 # PROF=-ftest-coverage -fprofile-arcs
 PROF=
 INCLUDES=-I./boehmgc/include -I./dyncall/include $(PROF)
