@@ -465,6 +465,8 @@ variable latest-defined-vocab
 : . 0 .r space ;
 : u. u. space ;
 
+: f. s" %f" format tell ;
+
 ( vocabulary-aware new version of find )
 : find ( wordname -- word )
     dup find            ( wordname dictentry ) \ try to find from current latest first
@@ -957,11 +959,16 @@ include unittest.f
     ." Welcome!" cr
 ;
 
+: format-prompt
+    current-vocab @ vocab-name
+    depth cell / 1-
+    s" [%d %s]> " format
+;
+
 : quit
     <stdin> input-stream !
     begin
-	." [" depth cell / . current-vocab @ vocab-name tell
-	s" ]> " input-stream @ prompt
+	format-prompt input-stream @ prompt
 	input-stream @ ?eof not
     while
 	    begin
