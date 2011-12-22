@@ -32,8 +32,8 @@ install: forth
 
 dyncall:
 	tar xzvf dyncall-0.6.tar.gz
-	(cd dyncall-0.6; ./configure --prefix=`pwd`/../dyncall; make; make install)
+	cd dyncall-0.6; ./configure --prefix=`pwd`/../dyncall; make; make install
 
 boehmgc:
 	tar xzvf gc-7.1.tar.gz
-	(cd gc-7.1; ./configure --disable-gcj-support --host=i686-linux --prefix=`pwd`/../boehmgc; make; make install)
+	cd gc-7.1; ./configure --disable-gcj-support --host=i686-linux --prefix=`pwd`/../boehmgc; make; make install

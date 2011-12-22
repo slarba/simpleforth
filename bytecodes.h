@@ -188,6 +188,20 @@ BYTECODE(FDUP, "fdup", 0, 0, {
     float val = FTOP();
     FPUSH(val);    
   })
+BYTECODE(FDUP2, "fdup2", 0, 0, {
+    float val = FAT(1);
+    FPUSH(val);    
+    val = FAT(1);
+    FPUSH(val);
+  })
+BYTECODE(FDUPVEC, "fdupvec", 0, 0, {
+    float val = FAT(2);
+    FPUSH(val);    
+    val = FAT(2);
+    FPUSH(val);
+    val = FAT(2);
+    FPUSH(val);
+  })
 BYTECODE(DUPAT, "dup@", 1, 0, {
     cell *addr = (cell*)TOP();
     PUSH(*addr);
@@ -847,6 +861,11 @@ BYTECODE(V3SCALARDIV, "v3s/", 0, 0, {
 BYTECODE(V3DOT, "v3dot", 0, 0, {
     float result = FAT(0)*FAT(3) + FAT(1)*FAT(4) + FAT(2)*FAT(5);
     fs+=6;
+    FPUSH(result);
+  })
+BYTECODE(V3LENSQUARED, "v3len^2", 0, 0, {
+    float result = FAT(0)*FAT(0) + FAT(1)*FAT(1) + FAT(2)*FAT(2);
+    fs+=3;
     FPUSH(result);
   })
 BYTECODE(V3CROSS, "v3cross", 0, 0, {
