@@ -8,6 +8,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include <ctype.h>
 #include <string.h>
 #include <limits.h>
@@ -398,6 +400,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("f0", (cell) &f0);
     create_constant("state", (cell) &state);
     create_constant("cellsize", (cell)sizeof(cell));
+    create_constant("floatsize", (cell)sizeof(float));
     create_constant("base", (cell) &base);
     create_constant("here", (cell) &here);
     create_constant("here0", (cell)here0);
@@ -410,6 +413,15 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("argv", (cell)argv);
     create_constant("current-thread", (cell)&current_thread);
     create_constant("debugger-vector", (cell)&debugger_vector);
+    create_constant("syscall-fn", (cell)&syscall);
+    create_constant("SYS_ioctl", (cell)SYS_ioctl);
+    create_constant("SYS_open", (cell)SYS_open);
+    create_constant("SYS_read", (cell)SYS_read);
+    create_constant("SYS_write", (cell)SYS_write);
+    create_constant("SYS_close", (cell)SYS_close);
+    create_constant("SYS_fcntl", (cell)SYS_fcntl);
+    create_constant("DC_CALL_C_ELLIPSIS", (cell)DC_CALL_C_ELLIPSIS);
+    create_constant("DC_CALL_C_DEFAULT", (cell)DC_CALL_C_DEFAULT);
     create_fconstant("FLT_MAX", FLT_MAX);
     create_fconstant("FLT_MIN", FLT_MIN);
     create_fconstant("PI", 3.141592654);

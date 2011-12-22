@@ -262,6 +262,22 @@ BYTECODE(MROT, "-rot", 3, 0, {
     PUSH(ecx);
     PUSH(ebx);    
   })
+BYTECODE(FROT, "frot", 0, 0, {
+    float eax = FPOP();
+    float ebx = FPOP();
+    float ecx = FPOP();
+    FPUSH(ebx);
+    FPUSH(eax);
+    FPUSH(ecx);    
+  })
+BYTECODE(FMROT, "-frot", 0, 0, {
+    float eax = FPOP();
+    float ebx = FPOP();
+    float ecx = FPOP();
+    FPUSH(eax);
+    FPUSH(ecx);
+    FPUSH(ebx);    
+  })
 BYTECODE(2DROP, "2drop", 2, 0, { ds += 2; })
 BYTECODE(DIVMOD, "/mod", 2, 0, {
     cell a = POP();
@@ -787,6 +803,11 @@ BYTECODE(FATAN, "fatan", 0, 0, {
     float a = FPOP();
     FPUSH(atanf(a));
   })
+BYTECODE(FATAN2, "fatan2", 0, 0, {
+    float b = FPOP();
+    float a = FPOP();
+    FPUSH(atan2f(a,b));
+  })
 BYTECODE(FCEIL, "fceil", 0, 0, {
     float a = FPOP();
     FPUSH(ceilf(a));
@@ -798,6 +819,61 @@ BYTECODE(FTOI, "f>i", 0, 0, {
 BYTECODE(ITOF, "i>f", 1, 0, {
     cell a = POP();
     FPUSH(a);
+  })
+BYTECODE(V3ADD, "v3+", 0, 0, {
+    FAT(3) += FAT(0);
+    FAT(4) += FAT(1);
+    FAT(5) += FAT(2);
+    fs+=3;
+  })
+BYTECODE(V3SUB, "v3-", 0, 0, {
+    FAT(3) -= FAT(0);
+    FAT(4) -= FAT(1);
+    FAT(5) -= FAT(2);
+    fs+=3;
+  })
+BYTECODE(V3SCALARMULT, "v3s*", 0, 0, {
+    FAT(1) *= FAT(0);
+    FAT(2) *= FAT(0);
+    FAT(3) *= FAT(0);
+    fs+=1;
+  })
+BYTECODE(V3SCALARDIV, "v3s/", 0, 0, {
+    FAT(1) /= FAT(0);
+    FAT(2) /= FAT(0);
+    FAT(3) /= FAT(0);
+    fs+=1;
+  })
+BYTECODE(V3DOT, "v3dot", 0, 0, {
+    float result = FAT(0)*FAT(3) + FAT(1)*FAT(4) + FAT(2)*FAT(5);
+    fs+=6;
+    FPUSH(result);
+  })
+BYTECODE(V3CROSS, "v3cross", 0, 0, {
+    float a1 = FAT(5);
+    float a2 = FAT(4);
+    float a3 = FAT(3);
+    float b1 = FAT(2);
+    float b2 = FAT(1);
+    float b3 = FAT(0);
+    fs += 6;
+    FPUSH(a2*b3 - a3*b2);
+    FPUSH(a3*b1 - a1*b3);
+    FPUSH(a1*b2 - a2*b1);
+  })
+BYTECODE(M33VMUL, "mat3x3mul", 0, 0, {
+    // m11 m12 m13 m21 m22 m23 m31 m32 m33 v1 v2 v3
+    // 11  10  9   8   7   6   5   4   3   2  1  0
+    float a1 = FAT(11)*FAT(2) + FAT(10)*FAT(1) + FAT(9)*FAT(0);
+    float a2 = FAT(8)*FAT(2) + FAT(7)*FAT(1) + FAT(6)*FAT(0);
+    float a3 = FAT(5)*FAT(2) + FAT(4)*FAT(1) + FAT(3)*FAT(0);
+    fs += 12;
+    FPUSH(a1);
+    FPUSH(a2);
+    FPUSH(a3);
+  })
+BYTECODE(DCMODE, "dcmode", 1, 0, {
+    dcMode(callvm, POP());
   })
 BYTECODE(FORMAT, "format", 1, 0, {
     char *output = NULL;
