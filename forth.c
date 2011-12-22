@@ -413,17 +413,33 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("argv", (cell)argv);
     create_constant("current-thread", (cell)&current_thread);
     create_constant("debugger-vector", (cell)&debugger_vector);
+
     create_constant("syscall-fn", (cell)&syscall);
+
     create_constant("SYS_ioctl", (cell)SYS_ioctl);
     create_constant("SYS_open", (cell)SYS_open);
     create_constant("SYS_read", (cell)SYS_read);
     create_constant("SYS_write", (cell)SYS_write);
     create_constant("SYS_close", (cell)SYS_close);
     create_constant("SYS_fcntl", (cell)SYS_fcntl);
+    create_constant("SYS_nanosleep", (cell)SYS_nanosleep);
+    create_constant("SYS_mkdir", (cell)SYS_mkdir);
+    create_constant("SYS_rmdir", (cell)SYS_rmdir);
+    create_constant("SYS_fork", (cell)SYS_fork);
+    create_constant("SYS_dup", (cell)SYS_dup);
+    create_constant("SYS_lseek", (cell)SYS_lseek);
+    create_constant("SYS_chdir", (cell)SYS_chdir);
+    create_constant("SYS_creat", (cell)SYS_creat);
+    create_constant("SYS_unlink", (cell)SYS_unlink);
+    create_constant("SYS_rename", (cell)SYS_rename);
+    create_constant("SYS_getcwd", (cell)SYS_getcwd);
+
     create_constant("DC_CALL_C_ELLIPSIS", (cell)DC_CALL_C_ELLIPSIS);
     create_constant("DC_CALL_C_DEFAULT", (cell)DC_CALL_C_DEFAULT);
+
     create_fconstant("FLT_MAX", FLT_MAX);
     create_fconstant("FLT_MIN", FLT_MIN);
+    create_fconstant("FLT_EPSILON", FLT_EPSILON);
     create_fconstant("PI", 3.141592654);
 
     init_thread(s0, r0, t0, ip);
