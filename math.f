@@ -4,10 +4,29 @@
 : | immediate ;
 : m| immediate ;
 
-variable anglecos
-variable anglesin
+fvariable anglecos
+fvariable anglesin
 
 : fneg inline 0.0 fswap f- ;
+
+: v3. -frot fswap ." v3| " f. space f. space f. ."  |" ;
+
+: fpick ( n -- nthelement )
+    fsp@ swap floatsize * + f@ ;
+
+: m3.
+    8 fpick f. space
+    7 fpick f. space
+    6 fpick f. cr
+    5 fpick f. space
+    4 fpick f. space
+    3 fpick f. cr
+    2 fpick f. space
+    1 fpick f. space
+    0 fpick f. cr
+
+    9 times fdrop
+;
 
 : computeanglesincos inline
     fdup fsin anglesin f!

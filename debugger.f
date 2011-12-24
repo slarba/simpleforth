@@ -11,8 +11,7 @@ variable debugger-returnaddr
 	    exit
 	then
 
-	." [" depth cell / . current-vocab @ vocab-name tell
-	s" ] DEBUG> " input-stream @ prompt
+	format-debugger-prompt input-stream @ prompt
 
 	begin
 	    input-stream @ ?eol not
@@ -28,11 +27,12 @@ variable debugger-returnaddr
 ;
 
 : break immediate
-    ." sorry, 'break' not implemented" cr
+    1000 throw
 ;
 
 : disasm-current
     debugger-returnaddr @ disasm
 ;
 
+\ :noname 1000 throw ; debugger-vector !
 ' breakpoint debugger-vector !

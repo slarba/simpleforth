@@ -33,16 +33,24 @@ here @ dup cellsize + here ! create immediate
 
 : inline immediate make-inline ;
 
-: allot here @ swap here +! ;
+: aligned cellsize 1- + cellsize 1- invert and ;
+: align here @ aligned here ! ;
 
-: variable
-    cellsize allot
+: allot here @ swap here +! align ;
+
+: make-variable
+    allot
     word create make-inline
     ' lit ,
     ,
     ' exit ,
     ' eow ,
 ;
+
+: variable cellsize make-variable ;
+: fvariable floatsize make-variable ;
+: v3variable 3 floatsize *  make-variable ;
+: m3variable 3 3 * floatsize *  make-variable ;
 
 variable consthere
 variable consthere0
@@ -61,7 +69,7 @@ datahere0 !
 dup t0 !
 tsp!
 
-1024 cellsize * allot
+1024 floatsize * allot
 dup f0 !
 fsp!
 
@@ -230,10 +238,6 @@ fsp!
 : fmin f2dup f< if fdrop else fnip then ;
 : fmax f2dup f> if fdrop else fnip then ;
 
-: aligned
-    cellsize 1- + cellsize 1- invert and ;
-
-: align here @ aligned here ! ;
 : constalign consthere @ aligned consthere ! ;
 
 : c, here @ c! here @ 1+ here ! ;
@@ -391,6 +395,8 @@ variable latest-defined-vocab
 : decimal immediate 10 base ! ;
 : hex immediate 16 base ! ;
 
+: f. s" %f" format tell ;
+
 : u. ( u -- )
     base @ u/mod
     ?dup if
@@ -407,14 +413,37 @@ variable latest-defined-vocab
     emit
 ;
 
-: .s ( -- )
+: .ds ( -- )
     dsp@
     begin
-	dup s0 @ <
+	dup s0 @ u<
     while
 	    dup @ u.
 	    space
 	    cell+
+    repeat
+    drop
+;
+
+: .ts ( -- )
+    tsp@
+    begin
+	dup t0 @ u<
+    while
+	    dup @ u.
+	    space
+	    cell+
+    repeat
+    drop
+;
+
+: .fs ( -- )
+    fsp@
+    begin
+	dup f0 @ u<
+    while
+	    dup f@ f. space
+	    floatsize +
     repeat
     drop
 ;
@@ -464,8 +493,6 @@ variable latest-defined-vocab
 
 : . 0 .r space ;
 : u. u. space ;
-
-: f. s" %f" format tell ;
 
 ( vocabulary-aware new version of find )
 : find ( wordname -- word )
@@ -636,20 +663,6 @@ find-first-builtin
     then
 ;
 
-: quit
-    begin
-	input-stream @ ?eof not
-    while
-	interpret
-    repeat
-;
-
-quit
-
-( redefine to inline )
-: cell inline cellsize ;
-: cells inline cellsize * ;
-
 : defer immediate
     word create
     latest @ @ f_deferred xor latest @ !
@@ -683,6 +696,22 @@ quit
     then    
     create
 ;
+
+defer quit
+
+: simple-quit
+    begin
+	input-stream @ ?eof not
+    while
+	interpret
+    repeat
+;
+
+' simple-quit is quit
+
+( redefine to inline )
+: cell inline cellsize ;
+: cells inline cellsize * ;
 
 \ new version of colon to support deferred words-aware create
 : :
@@ -722,6 +751,14 @@ hide copytohere
 : depth
     s0 @ dsp@ -
     cell-
+;
+
+: fdepth
+    f0 @ fsp@ -
+;
+
+: tdepth
+    t0 @ tsp@ -
 ;
 
 : ? @ . ;
@@ -811,8 +848,8 @@ variable input-stack
     input-stack @ @
 ;
 
-: include ( -- )
-    word
+: include ( filename -- )
+    \ word
     for-reading open-file            ( fp )
     ?dup if                           ( fp )
 	input-stream @ push-input-stack   \ save old stdin
@@ -833,8 +870,8 @@ hide input-stack
 hide push-input-stack
 hide pop-input-stack
 
-include peephole.f
-opt-word include
+s" peephole.f" include
+\ opt-word include
 
 variable compiling-lambda
 0 compiling-lambda !
@@ -866,6 +903,36 @@ variable compiling-lambda
     then
 ;
 
+: times immediate
+    word find
+    dup 0= if
+	." times: no such word" cr
+	drop exit
+    then
+
+    dup ?builtin if
+	here @
+	' >t ,
+	over >cfa @ ,
+	' t> ,
+	' 1- ,
+	' dup , ' 0>branch ,
+	here @ - ,
+	' drop ,
+    else
+	here @
+	' >t ,
+	over >cfa
+	' call , ,
+	' t> ,
+	' 1- ,
+	' dup , ' 0>branch ,
+	here @ - ,
+	' drop ,
+    then
+    drop
+;
+
 : exception-marker
     rdrop 0
 ;
@@ -875,6 +942,8 @@ variable compiling-lambda
     ' exception-marker >r
     execute
 ;
+
+defer breakpoint
 
 : throw ( n -- )
     ?dup if
@@ -902,7 +971,7 @@ variable compiling-lambda
 	    
 	    ." uncaught throw " dup . cr
 	endcase
-	quit
+	breakpoint
     then
 ;
 
@@ -941,10 +1010,25 @@ variable compiling-lambda
     cr
 ;
 
-include disasm.f
-include debugger.f
-include classes.f
-include unittest.f
+: prompt-display-data
+    current-vocab @ vocab-name
+    fdepth floatsize /
+    tdepth cell /
+    depth cell / 3 -
+;
+
+: format-prompt
+    prompt-display-data s" [ds:%d ts:%d fs:%d %s]> " format
+;
+
+: format-debugger-prompt
+    prompt-display-data s" [ds:%d ts:%d fs:%d %s] DEBUG> " format
+;
+
+s" disasm.f" include
+s" debugger.f" include
+s" classes.f" include
+s" unittest.f" include
 
 : bytes-used
       here @ here0 - ;
@@ -952,20 +1036,17 @@ include unittest.f
 : const-bytes-used
       consthere @ consthere0 - ;
 
+: data-bytes-used
+      datahere @ datahere0 - ;
+  
 : welcome
-    ." MLT Forth version " version . cr 
-    ." Bytes used: " bytes-used . cr
-    ." Const used: " const-bytes-used . cr
-    ." Welcome!" cr
+    ." -^*^- MLT Forth version " version . ." -^*^-" cr 
+    ."   Const space used: " const-bytes-used . cr
+    ."    Data space used: " data-bytes-used . cr
+    ."         Space used: " bytes-used . cr
 ;
 
-: format-prompt
-    current-vocab @ vocab-name
-    depth cell / 1-
-    s" [%d %s]> " format
-;
-
-: quit
+: final-quit
     <stdin> input-stream !
     begin
 	format-prompt input-stream @ prompt
@@ -974,12 +1055,14 @@ include unittest.f
 	    begin
 		input-stream @ ?eol not
 	    while
-		    interpret
+		    ' interpret catch drop
 	    repeat
 	    cr
     repeat
     die
 ;
+
+' final-quit is quit
 
 welcome
 hide welcome
