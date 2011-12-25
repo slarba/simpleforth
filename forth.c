@@ -370,7 +370,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
   /* trick: include bytecodes.h with a macro for BYTECODE that produces builtin
    * list elements */
   static builtin_word_t builtins[] = {
-    #define BYTECODE(label, name, nargs, flags, code) { name, &&l_##label, flags },
+    #define BYTECODE(label, name, nargs, nfargs, flags, code) { name, &&l_##label, flags },
     #include "bytecodes.h"
     #undef BYTECODE
     { NULL, NULL, 0 }
@@ -440,7 +440,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_fconstant("FLT_MAX", FLT_MAX);
     create_fconstant("FLT_MIN", FLT_MIN);
     create_fconstant("FLT_EPSILON", FLT_EPSILON);
-    create_fconstant("PI", 3.141592654);
+    create_fconstant("PI", M_PI);
 
     init_thread(s0, r0, t0, ip);
 
@@ -463,11 +463,19 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
       ip = debugger_vector;						\
       NEXT();                                                                \
     }
+ #define CHECKFSTACK(name, amt) if((((cell)f0-(cell)fs)/sizeof(float)) < amt)  \
+    {                                                                        \
+      printf("%s: float stack underflow\n", (name));                               \
+      PUSHRS(ip);							\
+      ip = debugger_vector;						\
+      NEXT();                                                                \
+    }
 #else
  #define CHECKSTACK(name, amt)
+ #define CHECKFSTACK(name, amt)
 #endif
 
-#define BYTECODE(label, name, nargs, flags, code) l_##label: CHECKSTACK(name, nargs) code NEXT();
+#define BYTECODE(label, name, nargs, nfargs, flags, code) l_##label: CHECKSTACK(name, nargs) CHECKFSTACK(name, nfargs) code NEXT();
 #include "bytecodes.h"
 }
 
