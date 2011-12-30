@@ -488,6 +488,15 @@ BYTECODE(CFETCH, "c@", 1, 0, 0, {
     char *ptr = (char*)POP();
     PUSH(*ptr);    
   })
+BYTECODE(SSTORE, "s!", 2, 0, 0, {
+    short *ptr = (short*)POP();
+    tmp = POP();
+    *ptr = (short)tmp;    
+  })
+BYTECODE(SFETCH, "s@", 1, 0, 0, {
+    short *ptr = (short*)POP();
+    PUSH(*ptr);    
+  })
 BYTECODE(BYTECOPY, "c@c!", 2, 0, 0, {
     char *src = (char*)AT(1);
     char *dst = (char*)AT(0);
