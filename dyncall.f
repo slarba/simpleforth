@@ -35,6 +35,14 @@
     ' dcshort ,
 ;
 
+: c-float
+    ' dcfloat ,
+;
+
+: c-double
+    ' dcdouble ,
+;
+
 : c-int
     ' dcint ,
 ;
@@ -71,6 +79,18 @@
 : returns:char
     returns
     ' dccallchar ,
+    finish
+;
+
+: returns:float
+    returns
+    ' dccallfloat ,
+    finish
+;
+
+: returns:double
+    returns
+    ' dccalldouble ,
     finish
 ;
 

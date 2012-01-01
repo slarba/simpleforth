@@ -656,6 +656,8 @@ BYTECODE(RESETCALLVM, "dcreset", 0, 0, 0, { dcReset(callvm); })
 BYTECODE(DCARGBOOL, "dcbool", 1, 0, 0, { dcArgBool(callvm, (DCbool)POP()); })
 BYTECODE(DCARGCHAR, "dcchar", 1, 0, 0, { dcArgChar(callvm, (DCchar)POP()); })
 BYTECODE(DCARGSHORT, "dcshort", 1, 0, 0, { dcArgShort(callvm, (DCshort)POP()); })
+BYTECODE(DCARGFLOAT, "dcfloat", 0, 1, 0, { dcArgFloat(callvm, (DCfloat)FPOP()); })
+BYTECODE(DCARGDOUBLE, "dcdouble", 0, 1, 0, { dcArgDouble(callvm, (DCdouble)FPOP()); })
 BYTECODE(DCARGINT, "dcint", 1, 0, 0, { dcArgInt(callvm, (DCint)POP()); })
 BYTECODE(DCARGLONG, "dclong", 1, 0, 0, { dcArgLong(callvm, (DClong)POP()); })
 BYTECODE(DCARGPTR, "dcptr", 1, 0, 0, { dcArgPointer(callvm, (DCpointer)POP()); })
@@ -666,6 +668,14 @@ BYTECODE(DCCALLVOID, "dccallvoid", 1, 0, 0, {
 BYTECODE(DCCALLBOOL, "dccallbool", 1, 0, 0, {
     DCpointer funcptr = (DCpointer)POP();
     PUSH(dcCallBool(callvm, funcptr));
+  })
+BYTECODE(DCCALLFLOAT, "dccallfloat", 1, 0, 0, {
+    DCpointer funcptr = (DCpointer)POP();
+    FPUSH(dcCallFloat(callvm, funcptr));
+  })
+BYTECODE(DCCALLDOUBLE, "dccalldouble", 1, 0, 0, {
+    DCpointer funcptr = (DCpointer)POP();
+    FPUSH(dcCallDouble(callvm, funcptr));
   })
 BYTECODE(DCCALLCHAR, "dccallchar", 1, 0, 0, {
     DCpointer funcptr = (DCpointer)POP();
