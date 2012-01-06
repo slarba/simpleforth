@@ -78,6 +78,16 @@ BYTECODE(FFIELDSET, "ffield!", 1, 1, FLAG_HASARG, {
     void *ptr = (void*)(POP() + tmp);
     *((float*)ptr) = FPOP();
   })
+BYTECODE(SFIELDGET, "sfield@", 1, 0, FLAG_HASARG, {
+    tmp = INTARG();
+    void *ptr = (void*)(POP() + tmp);
+    PUSH(*((short*)ptr));
+  })
+BYTECODE(SFIELDSET, "sfield!", 2, 0, FLAG_HASARG, {
+    tmp = INTARG();
+    void *ptr = (void*)(POP() + tmp);
+    *((short*)ptr) = POP();
+  })
 BYTECODE(0BRANCH, "0branch", 1, 0, FLAG_HASARG, {
     tmp = INTARG();
     if(!POP()) ip += (tmp/sizeof(void*))-1;    
@@ -478,6 +488,14 @@ BYTECODE(FVARAT, "fvar@", 0, 0, FLAG_HASARG, {
 BYTECODE(FVARTO, "fvar!", 0, 1, FLAG_HASARG, {
     float *ptr = (float*)ARG();
     *ptr = FPOP();
+  })
+BYTECODE(SVARAT, "svar@", 0, 0, FLAG_HASARG, {
+    short *ptr = (short*)ARG();
+    PUSH(*ptr);
+  })
+BYTECODE(SVARTO, "svar!", 1, 0, FLAG_HASARG, {
+    short *ptr = (short*)ARG();
+    *ptr = (short)POP();
   })
 BYTECODE(CSTORE, "c!", 2, 0, 0, {
     char *ptr = (char*)POP();

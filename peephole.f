@@ -371,11 +371,18 @@ patterns
   p{ lit ? ! }p               -> r{ var! ? noop }r  ,
   p{ lit ? f@ }p               -> r{ fvar@ ? noop }r  ,
   p{ lit ? f! }p               -> r{ fvar! ? noop }r  ,
-
+  p{ lit ? s@ }p               -> r{ svar@ ? noop }r  ,
+  p{ lit ? s! }p               -> r{ svar! ? noop }r  ,
   p{ lit ? + @ }p             -> r{ field@ ? noop noop }r ,
   p{ lit ? + ! }p             -> r{ field! ? noop noop }r ,
   p{ lit+ ? @ }p              -> r{ field@ ? noop }r ,
   p{ lit+ ? ! }p              -> r{ field! ? noop }r ,
+
+  p{ lit ? + s@ }p             -> r{ sfield@ ? noop noop }r ,
+  p{ lit ? + s! }p             -> r{ sfield! ? noop noop }r ,
+  p{ lit+ ? s@ }p              -> r{ sfield@ ? noop }r ,
+  p{ lit+ ? s! }p              -> r{ sfield! ? noop }r ,
+
   p{ lit ? + f@ }p             -> r{ ffield@ ? noop noop }r ,
   p{ lit ? + f! }p             -> r{ ffield! ? noop noop }r ,
   p{ lit+ ? f@ }p              -> r{ ffield@ ? noop }r ,

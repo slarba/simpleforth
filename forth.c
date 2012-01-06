@@ -423,6 +423,7 @@ static void interpret(void **ip, cell *ds, void ***rs, reader_state_t *inputstat
     create_constant("SYS_close", (cell)SYS_close);
     create_constant("SYS_fcntl", (cell)SYS_fcntl);
     create_constant("SYS_nanosleep", (cell)SYS_nanosleep);
+    create_constant("SYS_gettimeofday", (cell)SYS_gettimeofday);
     create_constant("SYS_mkdir", (cell)SYS_mkdir);
     create_constant("SYS_rmdir", (cell)SYS_rmdir);
     create_constant("SYS_fork", (cell)SYS_fork);

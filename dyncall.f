@@ -13,8 +13,8 @@
     word create
     2dup swap dcsymbol
     ?dup not if
-	." no such symbol name"
-	2drop
+	." no such symbol name: " tell cr
+	drop
 	die
     else
 	( library symbolname funptr )
